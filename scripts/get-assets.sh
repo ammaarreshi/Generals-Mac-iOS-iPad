@@ -15,6 +15,15 @@ TMP_DIR="$HOME/GeneralsX/.steamcmd_zh"
 
 mkdir -p "$TMP_DIR" "$DEST"
 
+# macOS Gatekeeper quarantines steamcmd's unnotarized bundled frameworks
+# (e.g. Breakpad.framework) when Homebrew installs the cask. On first run that
+# pops a blocking "Apple could not verify ... malware" dialog that stops
+# steamcmd dead. Clear the quarantine flag off the steamcmd install up front.
+if [[ "$(uname)" == "Darwin" ]] && command -v brew >/dev/null 2>&1; then
+    STEAMCMD_CASK="$(brew --prefix)/Caskroom/steamcmd"
+    [[ -d "$STEAMCMD_CASK" ]] && xattr -dr com.apple.quarantine "$STEAMCMD_CASK" 2>/dev/null || true
+fi
+
 # steamcmd and the Steam desktop client share one data directory
 # (~/Library/Application Support/Steam on macOS, ~/.steam on Linux). When the
 # desktop client is running it holds a single-instance lock, so steamcmd stalls
