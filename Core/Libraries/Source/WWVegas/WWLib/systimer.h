@@ -46,13 +46,16 @@
 #define TIMEGETTIME SystemTime.Get
 #define MS_TIMER_SECOND 1000
 #else
-#include <sys/time.h>
+#include <time.h>
 
+// GeneralsX @bugfix 07/07/2026 Use the monotonic clock, not gettimeofday: wall time steps
+// backward on NTP/carrier sync (frequent on iOS), and every elapsed-time gate in the engine
+// (shell updates, animations, network resends) then stalls until the clock catches back up.
 inline unsigned long systimerGetMS()
 {
-	struct timeval tv;
-	gettimeofday(&tv, nullptr);
-	return (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return (unsigned long)((unsigned long long)ts.tv_sec * 1000ull + (unsigned long long)ts.tv_nsec / 1000000ull);
 }
 
 #define TIMEGETTIME systimerGetMS

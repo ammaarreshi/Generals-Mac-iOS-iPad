@@ -112,10 +112,25 @@ EnumeratedIP * IPEnumeration::getAddresses()
 				continue;
 			}
 
+			// GeneralsX @bugfix 07/07/2026 Skip point-to-point interfaces: cellular (pdp_ip* on iOS) and
+			// VPN tunnels (utun*) are not reachable by LAN peers, and their addresses sort numerically
+			// below the Wi-Fi/Ethernet address, so the LAN lobby would pick them as the default IP.
+			if ((ifa->ifa_flags & IFF_POINTOPOINT) != 0)
+			{
+				continue;
+			}
+
 			const sockaddr_in *addr = reinterpret_cast<const sockaddr_in *>(ifa->ifa_addr);
 			// GeneralsX @bugfix BenderAI 31/03/2026 Use ntohl to convert from network byte order before extracting octets;
 			// reading s_addr byte-by-byte on little-endian platforms reverses the IPv4 octets.
 			const UnsignedInt hostAddr = ntohl(addr->sin_addr.s_addr);
+
+			// GeneralsX @bugfix 07/07/2026 Skip 169.254.0.0/16 link-local addresses (awdl0/llw0 on Apple
+			// platforms, or any interface that failed DHCP); they cannot host a LAN game.
+			if ((hostAddr & 0xFFFF0000u) == 0xA9FE0000u)
+			{
+				continue;
+			}
 			addNewIP(
 				(UnsignedByte)((hostAddr >> 24) & 0xFF),
 				(UnsignedByte)((hostAddr >> 16) & 0xFF),
