@@ -183,11 +183,14 @@ inline BOOL GetVersionEx(OSVERSIONINFO* lpVersionInfo) {
 
 // TheSuperHackers @build 10/02/2026 Bender
 // Timing functions: timeBeginPeriod(), timeEndPeriod() for Linux
+// GeneralsX @bugfix 07/07/2026 Use the monotonic clock, not gettimeofday: wall time steps
+// backward on NTP/carrier sync (frequent on iOS), and every elapsed-time gate in the engine
+// (shell updates, animations, network resends) then stalls until the clock catches back up.
 static inline DWORD timeGetTime(void)
 {
-    struct timeval tv;
-    gettimeofday(&tv, nullptr);
-    return (DWORD)((tv.tv_sec * 1000) + (tv.tv_usec / 1000));
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (DWORD)((unsigned long long)ts.tv_sec * 1000ull + (unsigned long long)ts.tv_nsec / 1000000ull);
 }
 
 static inline DWORD timeBeginPeriod(DWORD period)
