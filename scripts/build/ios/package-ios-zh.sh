@@ -190,11 +190,18 @@ echo "==> App ready: ${APP}"
 
 if [[ "${DO_INSTALL}" == "1" ]]; then
     echo "==> Installing to connected device"
-    DEVICE_ID=$(xcrun devicectl list devices 2>/dev/null | awk '/connected/{print $(NF-2); exit}')
-    if [[ -z "${DEVICE_ID}" ]]; then
-        # fall back: parse the identifier column (3rd-from-last varies with model names)
-        DEVICE_ID=$(xcrun devicectl list devices 2>/dev/null | grep -i connected | grep -oE '[0-9A-F-]{36}' | head -1)
-    fi
+    # Match only valid device-identifier shapes on the "connected" row, so a
+    # multi-word model name (e.g. "iPad Pro 13-inch (M4)") can never be mistaken
+    # for the identifier the way column counting was. Case-insensitive because
+    # devicectl prints lowercase ids. Handles:
+    #   - 40-char legacy physical UDID (hex)
+    #   - 25-char modern physical UDID: 00008020-001234567890ABCD (8-16)
+    #   - 36-char CoreDevice/simulator UUID: 8-4-4-4-12
+    # -w so the state word "connected" does not also match "disconnected".
+    DEVICE_ID=$(xcrun devicectl list devices 2>/dev/null \
+        | grep -iw 'connected' \
+        | grep -ioE '([0-9a-f]{40}|[0-9a-f]{8}-[0-9a-f]{16}|[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12})' \
+        | head -1)
     if [[ -z "${DEVICE_ID}" ]]; then
         echo "ERROR: no connected device found (xcrun devicectl list devices)"
         exit 1
