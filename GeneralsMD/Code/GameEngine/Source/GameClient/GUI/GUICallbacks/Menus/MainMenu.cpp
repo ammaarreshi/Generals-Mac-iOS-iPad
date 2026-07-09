@@ -81,6 +81,9 @@
 #include "GameClient/GadgetPushButton.h"
 #include <SDL3/SDL.h>
 #endif
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
 
 
 // PRIVATE DATA ///////////////////////////////////////////////////////////////////////////////////
@@ -1057,6 +1060,10 @@ WindowMsgHandledType MainMenuInput( GameWindow *window, UnsignedInt msg,
 		{
 			// TheSuperHackers @tweak 26/02/2026 Show mouse and menu immediately when shellmap is disabled.
 			Bool doShow = !TheGlobalData->m_shellMapOn;
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+			// GeneralsX @bugfix Codex 09/07/2026 Touch has no idle mouse travel before the first tap, so reveal the main menu on first hover.
+			doShow = TRUE;
+#endif
 
 			if (!doShow)
 			{
