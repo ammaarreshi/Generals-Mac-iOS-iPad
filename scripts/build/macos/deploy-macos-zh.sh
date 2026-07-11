@@ -20,9 +20,20 @@ DXVK_D3D9_LIB_MESON="${BUILD_DIR}/_deps/dxvk-build-macos/src/d3d9/libdxvk_d3d9.0
 # GeneralsX @bugfix BenderAI 01/04/2026 Align deploy runtime selection with launcher logic by preferring the directory that contains .big assets.
 PREFERRED_RUNTIME_DIR="${HOME}/GeneralsX/GeneralsZH"
 LEGACY_RUNTIME_DIR="${HOME}/GeneralsX/GeneralsMD"
+LOCAL_BUILD_RUNTIME_DIR="${PROJECT_ROOT}/build/macos-runtime/GeneralsZH"
+LOCAL_RUNTIME_DIR="${PROJECT_ROOT}/.local/GeneralsZH"
 RUNTIME_DIR="${PREFERRED_RUNTIME_DIR}"
 
-if [[ -d "${PREFERRED_RUNTIME_DIR}" && -n "$(compgen -G "${PREFERRED_RUNTIME_DIR}/*.big" 2>/dev/null)" ]]; then
+if [[ -n "${GX_RUNTIME_DIR:-}" ]]; then
+    RUNTIME_DIR="${GX_RUNTIME_DIR}"
+    echo "INFO: Using runtime directory from GX_RUNTIME_DIR=${GX_RUNTIME_DIR}"
+elif [[ -d "${LOCAL_BUILD_RUNTIME_DIR}" && -n "$(compgen -G "${LOCAL_BUILD_RUNTIME_DIR}/*.big" 2>/dev/null)" ]]; then
+    RUNTIME_DIR="${LOCAL_BUILD_RUNTIME_DIR}"
+    echo "INFO: Detected Zero Hour assets in local build runtime ${LOCAL_BUILD_RUNTIME_DIR}; deploying there"
+elif [[ -d "${LOCAL_RUNTIME_DIR}" && -n "$(compgen -G "${LOCAL_RUNTIME_DIR}/*.big" 2>/dev/null)" ]]; then
+    RUNTIME_DIR="${LOCAL_RUNTIME_DIR}"
+    echo "INFO: Detected Zero Hour assets in local runtime ${LOCAL_RUNTIME_DIR}; deploying there"
+elif [[ -d "${PREFERRED_RUNTIME_DIR}" && -n "$(compgen -G "${PREFERRED_RUNTIME_DIR}/*.big" 2>/dev/null)" ]]; then
     RUNTIME_DIR="${PREFERRED_RUNTIME_DIR}"
     echo "INFO: Detected Zero Hour assets in ${PREFERRED_RUNTIME_DIR}; deploying there"
 elif [[ -d "${LEGACY_RUNTIME_DIR}" && -n "$(compgen -G "${LEGACY_RUNTIME_DIR}/*.big" 2>/dev/null)" ]]; then
@@ -39,7 +50,7 @@ fi
 # first (issue #1), then the conventional ~/VulkanSDK/<version>/macOS glob.
 _VULKAN_SDK_ENV="${VULKAN_SDK:-}"; _VULKAN_SDK_ROOT_ENV="${VULKAN_SDK_ROOT:-}"
 VULKAN_SDK_ROOT=""
-for sdk_candidate in "${_VULKAN_SDK_ENV}" "${_VULKAN_SDK_ROOT_ENV}" "${HOME}/VulkanSDK"/*/macOS; do
+for sdk_candidate in "${_VULKAN_SDK_ENV}" "${_VULKAN_SDK_ROOT_ENV}" "${PROJECT_ROOT}/.local/vulkan-sdk/macOS" "${PROJECT_ROOT}/.local/vulkan-sdk" "${HOME}/VulkanSDK"/*/macOS; do
     [[ -n "${sdk_candidate}" ]] || continue
     if [[ -f "${sdk_candidate}/lib/libvulkan.dylib" ]]; then
         VULKAN_SDK_ROOT="${sdk_candidate}"

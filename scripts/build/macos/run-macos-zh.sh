@@ -10,8 +10,16 @@ BUILD_DIR="${PROJECT_ROOT}/build/macos-vulkan"
 # GeneralsX @feature BenderAI 01/04/2026 Prefer GeneralsZH for user-facing Zero Hour runtime path with GeneralsMD fallback.
 PREFERRED_GAME_DIR="${HOME}/GeneralsX/GeneralsZH"
 LEGACY_GAME_DIR="${HOME}/GeneralsX/GeneralsMD"
+LOCAL_BUILD_GAME_DIR="${PROJECT_ROOT}/build/macos-runtime/GeneralsZH"
+LOCAL_GAME_DIR="${PROJECT_ROOT}/.local/GeneralsZH"
 GAME_DIR="${PREFERRED_GAME_DIR}"
-if [[ -d "${PREFERRED_GAME_DIR}" && -n "$(compgen -G "${PREFERRED_GAME_DIR}/*.big" 2>/dev/null)" ]]; then
+if [[ -n "${GX_RUNTIME_DIR:-}" ]]; then
+    GAME_DIR="${GX_RUNTIME_DIR}"
+elif [[ -d "${LOCAL_BUILD_GAME_DIR}" && -n "$(compgen -G "${LOCAL_BUILD_GAME_DIR}/*.big" 2>/dev/null)" ]]; then
+    GAME_DIR="${LOCAL_BUILD_GAME_DIR}"
+elif [[ -d "${LOCAL_GAME_DIR}" && -n "$(compgen -G "${LOCAL_GAME_DIR}/*.big" 2>/dev/null)" ]]; then
+    GAME_DIR="${LOCAL_GAME_DIR}"
+elif [[ -d "${PREFERRED_GAME_DIR}" && -n "$(compgen -G "${PREFERRED_GAME_DIR}/*.big" 2>/dev/null)" ]]; then
     GAME_DIR="${PREFERRED_GAME_DIR}"
 elif [[ -d "${LEGACY_GAME_DIR}" && -n "$(compgen -G "${LEGACY_GAME_DIR}/*.big" 2>/dev/null)" ]]; then
     GAME_DIR="${LEGACY_GAME_DIR}"
@@ -46,7 +54,7 @@ export DYLD_LIBRARY_PATH="${GAME_DIR}:${DYLD_LIBRARY_PATH:-}"
 MVK_ICD="${GAME_DIR}/MoltenVK_icd.json"
 if [[ ! -f "${MVK_ICD}" ]]; then
     # Try the Vulkan SDK installation path (LunarG installer layout)
-    for sdk_candidate in "${HOME}/VulkanSDK"/*/macOS; do
+    for sdk_candidate in "${PROJECT_ROOT}/.local/vulkan-sdk/macOS" "${PROJECT_ROOT}/.local/vulkan-sdk" "${HOME}/VulkanSDK"/*/macOS; do
         if [[ -f "${sdk_candidate}/share/vulkan/icd.d/MoltenVK_icd.json" ]]; then
             MVK_ICD="${sdk_candidate}/share/vulkan/icd.d/MoltenVK_icd.json"
             break

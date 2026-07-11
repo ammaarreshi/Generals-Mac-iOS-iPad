@@ -3,8 +3,8 @@
 <img width="500" height="281" alt="IMG_3457_500" src="https://github.com/user-attachments/assets/aeaf6692-36e6-40c8-b9f8-8066d014ec4b" />
 
 **Zero Hour running natively on Apple Silicon Macs, iPhone, and iPad** — campaign,
-skirmish, and Generals Challenge, with touch controls built for RTS (tap-select,
-drag-box, long-press deselect, two-finger scroll, pinch zoom). No emulation: this
+skirmish, and Generals Challenge, with direct-touch RTS controls (tap actions,
+drag camera pan, hold-drag box selection, pinch zoom). No emulation: this
 is the real 2003 engine compiled for ARM64, rendering DirectX 8 →
 [DXVK](https://github.com/doitsujin/dxvk) → Vulkan →
 [MoltenVK](https://github.com/KhronosGroup/MoltenVK) → Metal.
@@ -39,9 +39,9 @@ What did *not* exist was any of this on iOS — and iOS is a hostile place for a
   resume. The whole render/sim loop learned to hold its breath.
 - **An RTS needs a mouse.** SDL3 (from the lineage below) delivers raw touch events;
   the RTS semantics on top are new. Taps defer until the 2003 GUI has processed
-  hover (or menu buttons never highlight), a drag has to decide "selection box or
-  camera pan," long-press became right-click, and a cancelled touch must never
-  ghost-click a rally point.
+  hover (or menu buttons never highlight), direct drags pan the camera, a deliberate
+  hold-drag draws a selection box, and a cancelled touch must never ghost-click a
+  rally point.
 - **And then the bug hunts** — the best part. The minimap that rendered black
   because a 2003 texture-format fallback silently dropped the alpha channel. The
   EVA voice that went randomly mute because one zombie audio stream held a global
@@ -60,6 +60,10 @@ black"* and *"I hear chirping"* and owned every decision. Neither half ships thi
 alone: one of us can't write C++, and the other can't hear the chirping.
 
 ## Quick start — macOS
+
+For the complete validated Apple Silicon and iPad build procedure, including
+the local Vulkan SDK shim and signing, see
+[`docs/BUILDING_APPLE.md`](docs/BUILDING_APPLE.md).
 
 Prerequisites (one time):
 
@@ -108,10 +112,29 @@ Find your team id in Xcode → Settings → Accounts. Assets ship inside the app
 bundle (self-contained install); `--dev` skips the ~2.7 GB copy for fast code
 iteration.
 
+### Touch controls
+
+The iOS build uses a direct-touch RTS scheme rather than treating a finger like a
+mouse pointer:
+
+| Gesture | Action |
+|---|---|
+| Tap | Select a unit, activate UI, or issue the contextual move/attack command |
+| Drag | Pan the camera |
+| Briefly hold (~0.3 s), then drag | Box-select units |
+| Pinch | Zoom the camera |
+| Double-tap a unit | Select matching units |
+| Two-finger tap | Cancel the current command or deselect |
+| Hold, then lift | Cancel the current command or deselect |
+
+The touch mapping expects the standard mouse interface, so the packaged iOS
+`Options.ini` explicitly disables alternate mouse mode.
+
 ## Where things are
 
 | Path | What it is |
 |---|---|
+| [`docs/BUILDING_APPLE.md`](docs/BUILDING_APPLE.md) | Reproducible macOS and iOS/iPadOS build, signing, install, and packaging guide |
 | [`docs/port/PORTING_PLAYBOOK.md`](docs/port/PORTING_PLAYBOOK.md) | The complete engineering log of this port: every failure mode, root cause, fix — start with [§8, the bug archaeology](docs/port/PORTING_PLAYBOOK.md#8-post-ship-bug-hunts-junejuly-2026--the-archaeology-section): the black minimap, the silent EVA lines, and the chirp |
 | `docs/port/PORTING_PATTERNS.md` | Generalized methodology for porting classic Windows games to Apple platforms |
 | `docs/port/RELEASE_CHECKLIST.md` | Gate for public release |

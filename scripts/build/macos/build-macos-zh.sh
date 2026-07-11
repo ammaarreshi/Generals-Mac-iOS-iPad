@@ -21,6 +21,8 @@ PRESET="macos-vulkan"
 BUILD_DIR="build/${PRESET}"
 LOG_FILE="logs/build_zh_${PRESET}.log"
 SKIP_CONFIGURE=0
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
 for arg in "$@"; do
     case "$arg" in
@@ -65,6 +67,8 @@ resolve_vcpkg_root() {
         brew_vcpkg_root="$(brew --prefix vcpkg 2>/dev/null || true)"
     fi
 
+    candidates+=("${PROJECT_ROOT}/vcpkg")
+    candidates+=("${PROJECT_ROOT}/../vcpkg")
     candidates+=("${PWD}/vcpkg")
     candidates+=("${HOME}/vcpkg")
     candidates+=("/opt/vcpkg")
@@ -94,7 +98,7 @@ resolve_vcpkg_root
 # (issue #1: users export it from ~/.zshrc or install outside ~/VulkanSDK),
 # then fall back to the conventional ~/VulkanSDK/<version>/macOS glob.
 RESOLVED_VULKAN_SDK=""
-for sdk_candidate in "${VULKAN_SDK:-}" "${VULKAN_SDK_ROOT:-}" "${HOME}/VulkanSDK"/*/macOS; do
+for sdk_candidate in "${VULKAN_SDK:-}" "${VULKAN_SDK_ROOT:-}" "${PROJECT_ROOT}/.local/vulkan-sdk/macOS" "${PROJECT_ROOT}/.local/vulkan-sdk" "${HOME}/VulkanSDK"/*/macOS; do
     [[ -n "${sdk_candidate}" ]] || continue
     # accept either the .../macOS dir itself or an SDK root that contains it
     if [[ -f "${sdk_candidate}/lib/libvulkan.dylib" ]]; then

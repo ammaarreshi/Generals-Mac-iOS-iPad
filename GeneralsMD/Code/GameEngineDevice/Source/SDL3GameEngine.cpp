@@ -127,42 +127,85 @@ static bool SDLCALL iosLifecycleWatcher(void *userdata, SDL_Event *event)
 // SDL_HINT_TOUCH_MOUSE_EVENTS=0); every mouse event the game sees on iOS is
 // synthesized here, through the same SDL3Mouse::addSDLEvent path real mice use.
 //
-// Gestures (matching the game's stock control scheme, which is LMB-centric):
-//   1 finger tap/drag     -> left button click / drag (select, command, drag-box)
-//   1 finger long-press   -> right button click (deselect), if finger stays put
-//   2 finger drag         -> right-button drag at the centroid (camera scroll)
+// Direct-touch RTS controls:
+//   1 finger tap          -> left click (select, activate UI, contextual command)
+//   1 finger drag         -> right-button drag (camera pan)
+//   1 finger hold + drag  -> left-button drag (selection box)
+//   1 finger hold + lift  -> right click (cancel / deselect)
 //   2 finger pinch        -> mouse wheel (camera zoom)
+//   2 finger tap          -> right click (cancel / deselect)
+//   double-tap a unit     -> left double-click (select matching units)
 // ---------------------------------------------------------------------------
 namespace {
 
 struct TouchState {
 	enum Phase {
-		IDLE,        // no fingers tracked
-		PENDING,     // finger1 down, gesture identity not yet known, nothing sent
-		DRAGGING,    // finger1 drag in progress, LMB held
-		LONGPRESSED, // long-press fired (RMB click sent), swallow until lift
-		PAN          // two-finger camera pan, RMB held
+		IDLE,             // no fingers tracked
+		TAP_PENDING,      // finger1 down, gesture identity not yet known
+		HOLD_READY,       // hold elapsed; drag selects, lift cancels
+		PANNING,          // one-finger camera pan, RMB held
+		SELECTING,        // hold-drag selection box, LMB held
+		MULTITOUCH,       // two-finger tap or pinch
+		WAIT_FOR_RELEASE  // gesture ended while one tracked finger remains down
 	};
 
 	Phase phase = IDLE;
 	SDL_FingerID finger1 = 0;
 	SDL_FingerID finger2 = 0;
-	float downX = 0.0f, downY = 0.0f;   // finger1 down position (window points)
-	float lastX = 0.0f, lastY = 0.0f;   // finger1 latest position
-	float panX = 0.0f, panY = 0.0f;     // pan centroid
-	float pinchDist = 0.0f;             // finger distance at last wheel step
+	float downX = 0.0f, downY = 0.0f;      // finger1 down position (window points)
+	float lastX = 0.0f, lastY = 0.0f;      // finger1 latest position
+	float multiX = 0.0f, multiY = 0.0f;    // initial two-finger centroid
+	float pinchStartDist = 0.0f;
+	float pinchDist = 0.0f;
+	float pinchAccumulator = 0.0f;
+	bool multiMoved = false;
 	Uint64 downTicks = 0;
 	float f1x = 0.0f, f1y = 0.0f, f2x = 0.0f, f2y = 0.0f; // normalized per finger
 };
 
-TouchState s_touch;
+struct TapHistory {
+	Uint64 ticks = 0;
+	float x = 0.0f;
+	float y = 0.0f;
+};
 
-const Uint64 LONG_PRESS_MS = 600;
-const float PINCH_STEP_RATIO = 0.06f;  // 6% distance change per wheel tick
-const float TAP_DEAD_ZONE_PX = 8.0f;   // jitter below this keeps a tap a tap
+TouchState s_touch;
+TapHistory s_lastTap;
+
+const Uint64 HOLD_TO_SELECT_MS = 300;
+const Uint64 DOUBLE_TAP_MS = 325;
+const float PINCH_STEP_RATIO = 0.045f;
+const float PAN_START_SLOP_MULTIPLIER = 2.0f;
+
+float touchDistance(float x1, float y1, float x2, float y2)
+{
+	const float dx = x1 - x2;
+	const float dy = y1 - y2;
+	return SDL_sqrtf(dx * dx + dy * dy);
+}
+
+float gestureSlop(int winW, int winH)
+{
+	const int shortSide = winW < winH ? winW : winH;
+	float slop = (float)shortSide * 0.012f;
+	if (slop < 10.0f) slop = 10.0f;
+	if (slop > 18.0f) slop = 18.0f;
+	return slop;
+}
+
+void clearTapHistory()
+{
+	s_lastTap = TapHistory();
+}
+
+void resetTouchState()
+{
+	s_touch = TouchState();
+}
 
 void sendSyntheticMouse(SDL3Mouse *mouse, SDL_Window *window, Uint32 type,
-                        float x, float y, Uint8 button = 0, float wheelY = 0.0f)
+						float x, float y, Uint8 button = 0, float wheelY = 0.0f,
+						Uint8 clicks = 1)
 {
 	// The windowID must be valid: SDL3Mouse::scaleMouseCoordinates() looks the
 	// window up by id to map window points into the game's internal resolution,
@@ -172,6 +215,7 @@ void sendSyntheticMouse(SDL3Mouse *mouse, SDL_Window *window, Uint32 type,
 	SDL_Event ev;
 	SDL_zero(ev);
 	ev.type = type;
+	ev.common.timestamp = SDL_GetTicksNS();
 	switch (type) {
 		case SDL_EVENT_MOUSE_MOTION:
 			ev.motion.windowID = windowID;
@@ -183,7 +227,7 @@ void sendSyntheticMouse(SDL3Mouse *mouse, SDL_Window *window, Uint32 type,
 			ev.button.windowID = windowID;
 			ev.button.button = button;
 			ev.button.down = (type == SDL_EVENT_MOUSE_BUTTON_DOWN);
-			ev.button.clicks = 1;
+			ev.button.clicks = clicks;
 			ev.button.x = x;
 			ev.button.y = y;
 			break;
@@ -198,17 +242,96 @@ void sendSyntheticMouse(SDL3Mouse *mouse, SDL_Window *window, Uint32 type,
 	mouse->addSDLEvent(&ev);
 }
 
-void beginPan(SDL3Mouse *mouse, SDL_Window *window, int winW, int winH)
+void sendMouseClick(SDL3Mouse *mouse, SDL_Window *window, float x, float y,
+					Uint8 button, Uint8 clicks = 1)
 {
-	s_touch.panX = (s_touch.f1x + s_touch.f2x) * 0.5f * (float)winW;
-	s_touch.panY = (s_touch.f1y + s_touch.f2y) * 0.5f * (float)winH;
-	const float dx = (s_touch.f1x - s_touch.f2x) * (float)winW;
-	const float dy = (s_touch.f1y - s_touch.f2y) * (float)winH;
-	s_touch.pinchDist = SDL_sqrtf(dx * dx + dy * dy);
-	sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, s_touch.panX, s_touch.panY);
+	sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, x, y);
 	sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
-	                   s_touch.panX, s_touch.panY, SDL_BUTTON_RIGHT);
-	s_touch.phase = TouchState::PAN;
+	                   x, y, button, 0.0f, clicks);
+	sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
+	                   x, y, button, 0.0f, clicks);
+}
+
+Uint8 registerUnitTap(SDL3Mouse *mouse, float x, float y, float slop)
+{
+	// Double-click messages are useful over units, but many legacy GUI gadgets
+	// only understand ordinary button-down events. Restrict touch double-clicks
+	// to the engine's selectable-unit cursor so rapid UI taps remain reliable.
+	if (mouse->getMouseCursor() != Mouse::SELECTING) {
+		clearTapHistory();
+		return 1;
+	}
+
+	const Uint64 now = SDL_GetTicks();
+	if (s_lastTap.ticks != 0 && now - s_lastTap.ticks <= DOUBLE_TAP_MS &&
+	    touchDistance(x, y, s_lastTap.x, s_lastTap.y) <= slop * 2.0f) {
+		clearTapHistory();
+		return 2;
+	}
+
+	s_lastTap.ticks = now;
+	s_lastTap.x = x;
+	s_lastTap.y = y;
+	return 1;
+}
+
+void beginPan(SDL3Mouse *mouse, SDL_Window *window, float x, float y)
+{
+	clearTapHistory();
+	sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, s_touch.downX, s_touch.downY);
+	sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
+	                   s_touch.downX, s_touch.downY, SDL_BUTTON_RIGHT);
+	sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, x, y);
+	s_touch.phase = TouchState::PANNING;
+}
+
+void beginSelection(SDL3Mouse *mouse, SDL_Window *window, float x, float y)
+{
+	clearTapHistory();
+	sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, s_touch.downX, s_touch.downY);
+	sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
+	                   s_touch.downX, s_touch.downY, SDL_BUTTON_LEFT);
+	sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, x, y);
+	s_touch.phase = TouchState::SELECTING;
+}
+
+void beginMultitouch(SDL3Mouse *mouse, SDL_Window *window, int winW, int winH,
+					 SDL_FingerID finger2, float f2x, float f2y)
+{
+	if (s_touch.phase == TouchState::PANNING) {
+		sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
+		                   s_touch.lastX, s_touch.lastY, SDL_BUTTON_RIGHT);
+	}
+
+	clearTapHistory();
+	s_touch.finger2 = finger2;
+	s_touch.f2x = f2x;
+	s_touch.f2y = f2y;
+	s_touch.multiX = (s_touch.f1x + s_touch.f2x) * 0.5f * (float)winW;
+	s_touch.multiY = (s_touch.f1y + s_touch.f2y) * 0.5f * (float)winH;
+	s_touch.pinchStartDist = touchDistance(s_touch.f1x * (float)winW,
+	                                      s_touch.f1y * (float)winH,
+	                                      s_touch.f2x * (float)winW,
+	                                      s_touch.f2y * (float)winH);
+	s_touch.pinchDist = s_touch.pinchStartDist;
+	s_touch.pinchAccumulator = 0.0f;
+	s_touch.multiMoved = false;
+	s_touch.phase = TouchState::MULTITOUCH;
+	sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, s_touch.multiX, s_touch.multiY);
+}
+
+void waitForRemainingFinger(SDL_FingerID liftedFinger)
+{
+	if (liftedFinger == s_touch.finger1 && s_touch.finger2 != 0) {
+		s_touch.finger1 = s_touch.finger2;
+		s_touch.finger2 = 0;
+		s_touch.phase = TouchState::WAIT_FOR_RELEASE;
+	} else if (liftedFinger == s_touch.finger2 && s_touch.finger1 != 0) {
+		s_touch.finger2 = 0;
+		s_touch.phase = TouchState::WAIT_FOR_RELEASE;
+	} else {
+		resetTouchState();
+	}
 }
 
 void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &event)
@@ -217,16 +340,17 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
 	SDL_GetWindowSize(window, &winW, &winH);
 	const float px = event.tfinger.x * (float)winW;
 	const float py = event.tfinger.y * (float)winH;
+	const float slop = gestureSlop(winW, winH);
 
 	switch (event.type) {
 	case SDL_EVENT_FINGER_DOWN:
 		if (s_touch.phase == TouchState::IDLE) {
-			// Defer all BUTTON output: a finger landing could become a tap, a
-			// drag-box, a long-press, or the first finger of a camera pan. A
+			// Defer all BUTTON output: a finger landing could become a tap, pan,
+			// hold-selection, or the first finger of a pinch. A
 			// premature LMB down+up is a real click to the game (e.g. it sets a
 			// rally point when a production building is selected).
 			s_touch.finger1 = event.tfinger.fingerID;
-			s_touch.phase = TouchState::PENDING;
+			s_touch.phase = TouchState::TAP_PENDING;
 			s_touch.downX = s_touch.lastX = px;
 			s_touch.downY = s_touch.lastY = py;
 			s_touch.f1x = event.tfinger.x;
@@ -242,24 +366,19 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
 			// the widget is never hilited, so only the default/first item responds.
 			sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, px, py);
 		}
-		else if (s_touch.phase == TouchState::PENDING) {
-			// Second finger before the first committed to anything: pure pan,
-			// no left-click ever happened.
-			s_touch.finger2 = event.tfinger.fingerID;
-			s_touch.f2x = event.tfinger.x;
-			s_touch.f2y = event.tfinger.y;
-			beginPan(mouse, window, winW, winH);
+		else if (s_touch.phase == TouchState::TAP_PENDING ||
+		         s_touch.phase == TouchState::HOLD_READY ||
+		         s_touch.phase == TouchState::PANNING) {
+			beginMultitouch(mouse, window, winW, winH, event.tfinger.fingerID,
+			                event.tfinger.x, event.tfinger.y);
 		}
-		else if (s_touch.phase == TouchState::DRAGGING) {
-			// Second finger during a live drag: finish the drag-box, then pan.
+		else if (s_touch.phase == TouchState::SELECTING && s_touch.finger2 == 0) {
+			// Do not turn an intentional selection box into a pinch halfway
+			// through. Track the extra finger only so a new gesture cannot begin
+			// until every finger from this gesture has lifted.
 			s_touch.finger2 = event.tfinger.fingerID;
-			s_touch.f2x = event.tfinger.x;
-			s_touch.f2y = event.tfinger.y;
-			sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-			                   s_touch.lastX, s_touch.lastY, SDL_BUTTON_LEFT);
-			beginPan(mouse, window, winW, winH);
 		}
-		// LONGPRESSED / PAN with extra fingers: ignored
+		// MULTITOUCH / WAIT_FOR_RELEASE with extra fingers: ignored
 		break;
 
 	case SDL_EVENT_FINGER_MOTION:
@@ -268,101 +387,148 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
 			s_touch.f1y = event.tfinger.y;
 			s_touch.lastX = px;
 			s_touch.lastY = py;
-		} else if (s_touch.phase == TouchState::PAN && event.tfinger.fingerID == s_touch.finger2) {
+		} else if (s_touch.phase == TouchState::MULTITOUCH &&
+		           event.tfinger.fingerID == s_touch.finger2) {
 			s_touch.f2x = event.tfinger.x;
 			s_touch.f2y = event.tfinger.y;
 		} else {
 			break;
 		}
 
-		if (s_touch.phase == TouchState::PENDING && event.tfinger.fingerID == s_touch.finger1) {
-			const float moved = SDL_fabsf(px - s_touch.downX) + SDL_fabsf(py - s_touch.downY);
-			if (moved >= TAP_DEAD_ZONE_PX) {
-				// Commit to a drag: anchor the LMB at the original touch point so
-				// drag-boxes start where the finger first landed.
-				sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, s_touch.downX, s_touch.downY);
-				sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
-				                   s_touch.downX, s_touch.downY, SDL_BUTTON_LEFT);
-				sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, px, py);
-				s_touch.phase = TouchState::DRAGGING;
-			}
-		}
-		else if (s_touch.phase == TouchState::DRAGGING && event.tfinger.fingerID == s_touch.finger1) {
-			sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, px, py);
-		}
-		else if (s_touch.phase == TouchState::PAN) {
-			const float cx = (s_touch.f1x + s_touch.f2x) * 0.5f * (float)winW;
-			const float cy = (s_touch.f1y + s_touch.f2y) * 0.5f * (float)winH;
-			sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, cx, cy);
-			s_touch.panX = cx;
-			s_touch.panY = cy;
-
-			const float dx = (s_touch.f1x - s_touch.f2x) * (float)winW;
-			const float dy = (s_touch.f1y - s_touch.f2y) * (float)winH;
-			const float dist = SDL_sqrtf(dx * dx + dy * dy);
-			if (s_touch.pinchDist > 1.0f) {
-				const float ratio = dist / s_touch.pinchDist;
-				if (ratio > 1.0f + PINCH_STEP_RATIO) {
-					sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_WHEEL, cx, cy, 0, 1.0f);
-					s_touch.pinchDist = dist;
-				} else if (ratio < 1.0f - PINCH_STEP_RATIO) {
-					sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_WHEEL, cx, cy, 0, -1.0f);
-					s_touch.pinchDist = dist;
+		if (s_touch.phase == TouchState::TAP_PENDING &&
+		    event.tfinger.fingerID == s_touch.finger1) {
+			const float moved = touchDistance(px, py, s_touch.downX, s_touch.downY);
+			const Uint64 heldFor = SDL_GetTicks() - s_touch.downTicks;
+			if (heldFor >= HOLD_TO_SELECT_MS) {
+				// A selection hold gets first refusal on ordinary finger drift.
+				// Once armed, crossing the normal slop starts the marquee.
+				if (moved >= slop) {
+					beginSelection(mouse, window, px, py);
+				} else {
+					s_touch.phase = TouchState::HOLD_READY;
 				}
 			}
+			else if (moved >= slop * PAN_START_SLOP_MULTIPLIER) {
+				// Require a more decisive early swipe for pan so natural drift
+				// does not steal the hold-drag selection gesture.
+				beginPan(mouse, window, px, py);
+			}
+		}
+		else if (s_touch.phase == TouchState::HOLD_READY &&
+		         event.tfinger.fingerID == s_touch.finger1) {
+			if (touchDistance(px, py, s_touch.downX, s_touch.downY) >= slop) {
+				beginSelection(mouse, window, px, py);
+			}
+		}
+		else if (s_touch.phase == TouchState::PANNING &&
+		         event.tfinger.fingerID == s_touch.finger1) {
+			sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, px, py);
+		}
+		else if (s_touch.phase == TouchState::SELECTING &&
+		         event.tfinger.fingerID == s_touch.finger1) {
+			sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, px, py);
+		}
+		else if (s_touch.phase == TouchState::MULTITOUCH) {
+			const float cx = (s_touch.f1x + s_touch.f2x) * 0.5f * (float)winW;
+			const float cy = (s_touch.f1y + s_touch.f2y) * 0.5f * (float)winH;
+			const float dist = touchDistance(s_touch.f1x * (float)winW,
+			                                 s_touch.f1y * (float)winH,
+			                                 s_touch.f2x * (float)winW,
+			                                 s_touch.f2y * (float)winH);
+			if (touchDistance(cx, cy, s_touch.multiX, s_touch.multiY) >= slop ||
+			    SDL_fabsf(dist - s_touch.pinchStartDist) >= slop) {
+				s_touch.multiMoved = true;
+			}
+
+			if (s_touch.pinchDist > 1.0f) {
+				s_touch.pinchAccumulator +=
+					(dist - s_touch.pinchDist) / (s_touch.pinchDist * PINCH_STEP_RATIO);
+				int steps = (int)s_touch.pinchAccumulator;
+				if (steps > 3) steps = 3;
+				if (steps < -3) steps = -3;
+				if (steps != 0) {
+					sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_WHEEL,
+					                   cx, cy, 0, (float)steps);
+					s_touch.pinchAccumulator -= (float)steps;
+				}
+			}
+			s_touch.pinchDist = dist;
 		}
 		break;
 
 	case SDL_EVENT_FINGER_UP:
 	case SDL_EVENT_FINGER_CANCELED:
-		if (event.tfinger.fingerID != s_touch.finger1 &&
-		    !(s_touch.phase == TouchState::PAN && event.tfinger.fingerID == s_touch.finger2)) {
+		if (s_touch.phase == TouchState::WAIT_FOR_RELEASE) {
+			if (event.tfinger.fingerID == s_touch.finger1) {
+				resetTouchState();
+			}
 			break;
 		}
+		if (event.tfinger.fingerID != s_touch.finger1 &&
+		    event.tfinger.fingerID != s_touch.finger2) {
+			break;
+		}
+		if (s_touch.phase == TouchState::SELECTING &&
+		    event.tfinger.fingerID == s_touch.finger2) {
+			s_touch.finger2 = 0;
+			break;
+		}
+
 		switch (s_touch.phase) {
-			case TouchState::PENDING:
+			case TouchState::TAP_PENDING:
 				// A CANCELED touch (incoming call, notification shade, palm
 				// rejection) must not become a committed tap — that would be a
 				// phantom select/command/rally-point click at the cancel point.
-				if (event.type == SDL_EVENT_FINGER_CANCELED) {
-					break;
+				if (event.type != SDL_EVENT_FINGER_CANCELED) {
+					const Uint8 clicks = registerUnitTap(mouse, s_touch.downX, s_touch.downY, slop);
+					sendMouseClick(mouse, window, s_touch.downX, s_touch.downY,
+					               SDL_BUTTON_LEFT, clicks);
 				}
-				// Clean tap: deliver the full click at the exact press position.
-				sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, s_touch.downX, s_touch.downY);
-				sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
-				                   s_touch.downX, s_touch.downY, SDL_BUTTON_LEFT);
-				sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-				                   s_touch.downX, s_touch.downY, SDL_BUTTON_LEFT);
 				break;
-			case TouchState::DRAGGING:
-				sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP, px, py, SDL_BUTTON_LEFT);
+			case TouchState::HOLD_READY:
+				clearTapHistory();
+				if (event.type != SDL_EVENT_FINGER_CANCELED) {
+					sendMouseClick(mouse, window, s_touch.downX, s_touch.downY,
+					               SDL_BUTTON_RIGHT);
+				}
 				break;
-			case TouchState::PAN:
+			case TouchState::PANNING:
 				sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-				                   s_touch.panX, s_touch.panY, SDL_BUTTON_RIGHT);
+				                   s_touch.lastX, s_touch.lastY, SDL_BUTTON_RIGHT);
+				break;
+			case TouchState::SELECTING:
+				sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
+				                   s_touch.lastX, s_touch.lastY, SDL_BUTTON_LEFT);
+				break;
+			case TouchState::MULTITOUCH:
+				if (event.type != SDL_EVENT_FINGER_CANCELED && !s_touch.multiMoved) {
+					sendMouseClick(mouse, window, s_touch.multiX, s_touch.multiY,
+					               SDL_BUTTON_RIGHT);
+				}
 				break;
 			default:
 				break;
 		}
-		s_touch.phase = TouchState::IDLE;
+
+		if (s_touch.phase == TouchState::MULTITOUCH ||
+		    (s_touch.phase == TouchState::SELECTING && s_touch.finger2 != 0)) {
+			waitForRemainingFinger(event.tfinger.fingerID);
+		} else {
+			resetTouchState();
+		}
 		break;
 	}
 }
 
-// Called once per engine frame (not just per touch event): a perfectly
-// stationary finger produces no SDL events, so the long-press timer must be
-// polled from the frame loop or it would never fire.
+// Called once per engine frame because a stationary finger emits no SDL events.
 void updateTouchLongPress(SDL3Mouse *mouse, SDL_Window *window)
 {
-	if (s_touch.phase == TouchState::PENDING &&
-	    (SDL_GetTicks() - s_touch.downTicks) >= LONG_PRESS_MS) {
-		// No LMB was sent yet (deferred), so this is a pure right-click.
-		sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, s_touch.downX, s_touch.downY);
-		sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
-		                   s_touch.downX, s_touch.downY, SDL_BUTTON_RIGHT);
-		sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-		                   s_touch.downX, s_touch.downY, SDL_BUTTON_RIGHT);
-		s_touch.phase = TouchState::LONGPRESSED;
+	(void)mouse;
+	(void)window;
+	if (s_touch.phase == TouchState::TAP_PENDING &&
+	    (SDL_GetTicks() - s_touch.downTicks) >= HOLD_TO_SELECT_MS) {
+		clearTapHistory();
+		s_touch.phase = TouchState::HOLD_READY;
 	}
 }
 
@@ -961,4 +1127,3 @@ AudioManager *SDL3GameEngine::createAudioManager(Bool dummy)
 }
 
 #endif // !_WIN32
-

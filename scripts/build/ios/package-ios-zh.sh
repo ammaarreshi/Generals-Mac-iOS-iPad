@@ -30,8 +30,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 BUILD_DIR="${PROJECT_ROOT}/build/ios-vulkan"
 IOS_DIR="${PROJECT_ROOT}/ios"
-DERIVED="${IOS_DIR}/build"
-OUT_DIR="${PROJECT_ROOT}/build/ios-package"
+DERIVED="${GX_DERIVED_DATA:-${IOS_DIR}/build}"
+OUT_DIR="${GX_IOS_PACKAGE_DIR:-${PROJECT_ROOT}/build/ios-package}"
 APP_NAME="GeneralsXZH"
 IDENTITY="${GX_SIGN_IDENTITY:-Apple Development}"
 
@@ -171,6 +171,11 @@ fi
 # Point the executable's rpath at the embedded frameworks
 install_name_tool -add_rpath "@executable_path/Frameworks" "${APP}/${APP_NAME}" 2>/dev/null || true
 
+# FileProvider-managed worktrees and downloaded frameworks can carry Finder or
+# provenance xattrs that iOS codesign rejects. Strip them after all bundle
+# resources have been copied and before the inside-out signing pass.
+xattr -cr "${APP}" 2>/dev/null || true
+
 echo "==> Re-signing"
 ENTITLEMENTS="${OUT_DIR}/entitlements.plist"
 codesign -d --entitlements - --xml "${SHELL_APP}" > "${ENTITLEMENTS}" 2>/dev/null
@@ -190,10 +195,15 @@ echo "==> App ready: ${APP}"
 
 if [[ "${DO_INSTALL}" == "1" ]]; then
     echo "==> Installing to connected device"
-    DEVICE_ID=$(xcrun devicectl list devices 2>/dev/null | awk '/connected/{print $(NF-2); exit}')
+    DEVICE_ID="${GX_DEVICE_ID:-}"
     if [[ -z "${DEVICE_ID}" ]]; then
-        # fall back: parse the identifier column (3rd-from-last varies with model names)
-        DEVICE_ID=$(xcrun devicectl list devices 2>/dev/null | grep -i connected | grep -oE '[0-9A-F-]{36}' | head -1)
+        # Xcode 26.6 reports attached trusted devices as "available (paired)"
+        # instead of "connected". Parse the UUID rather than relying on columns,
+        # since model names and state labels both contain spaces.
+        DEVICE_ID=$(xcrun devicectl list devices 2>/dev/null \
+            | awk '/connected|available \(paired\)/' \
+            | grep -oE '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' \
+            | head -1 || true)
     fi
     if [[ -z "${DEVICE_ID}" ]]; then
         echo "ERROR: no connected device found (xcrun devicectl list devices)"

@@ -20,6 +20,9 @@ DXVK_D3D9_LIB_MESON="${BUILD_DIR}/_deps/dxvk-build-macos/src/d3d9/libdxvk_d3d9.0
 BINARY_SRC="${BUILD_DIR}/GeneralsMD/GeneralsXZH"
 DXVK_CONF_SRC="${PROJECT_ROOT}/resources/dxvk/dxvk.conf"
 OUTPUT_ZIP="${PROJECT_ROOT}/GeneralsXZH-macos-arm64.zip"
+DEFAULT_CNC_GENERALS_PATH="${GX_BUNDLE_DEFAULT_CNC_GENERALS_PATH:-${PROJECT_ROOT}/.local/Generals}"
+DEFAULT_CNC_GENERALS_ZH_PATH="${GX_BUNDLE_DEFAULT_CNC_GENERALS_ZH_PATH:-${PROJECT_ROOT}/build/macos-runtime/GeneralsZH}"
+LOCAL_CNC_GENERALS_ZH_PATH="${GX_BUNDLE_LOCAL_CNC_GENERALS_ZH_PATH:-${PROJECT_ROOT}/.local/GeneralsZH}"
 
 DXVK_D3D8_LIB="${DXVK_D3D8_LIB_INSTALL}"
 DXVK_D3D9_LIB="${DXVK_D3D9_LIB_INSTALL}"
@@ -179,7 +182,7 @@ elif [[ -n "${VULKAN_SDK_ROOT:-}" ]] && [[ -f "${VULKAN_SDK_ROOT}/lib/libvulkan.
     : # pre-exported VULKAN_SDK_ROOT is valid; keep as-is
 else
     VULKAN_SDK_ROOT=""
-    for sdk_candidate in "${HOME}/VulkanSDK"/*/macOS; do
+    for sdk_candidate in "${PROJECT_ROOT}/.local/vulkan-sdk/macOS" "${PROJECT_ROOT}/.local/vulkan-sdk" "${HOME}/VulkanSDK"/*/macOS; do
         if [[ -f "${sdk_candidate}/lib/libvulkan.dylib" ]]; then
             VULKAN_SDK_ROOT="${sdk_candidate}"
         fi
@@ -190,6 +193,7 @@ fi
 APP_NAME="GeneralsXZH"
 APP_DIR_NAME="${APP_NAME}.app"
 INCLUDE_EXTERNAL_DYLIBS="${GX_BUNDLE_INCLUDE_EXTERNAL_DYLIBS:-1}"
+ADHOC_CODESIGN="${GX_BUNDLE_CODESIGN:-1}"
 
 echo "Bundling ${APP_NAME} (macOS ARM64)"
 
@@ -369,6 +373,9 @@ CONTENTS_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 RESOURCES_DIR="${CONTENTS_DIR}/Resources"
 BIN_DIR="${RESOURCES_DIR}/bin"
 LIB_DIR="${RESOURCES_DIR}/lib"
+DEFAULT_CNC_GENERALS_PATH="__GX_DEFAULT_CNC_GENERALS_PATH__"
+DEFAULT_CNC_GENERALS_ZH_PATH="__GX_DEFAULT_CNC_GENERALS_ZH_PATH__"
+LOCAL_CNC_GENERALS_ZH_PATH="__GX_LOCAL_CNC_GENERALS_ZH_PATH__"
 
 export DYLD_LIBRARY_PATH="${LIB_DIR}:${BIN_DIR}:${DYLD_LIBRARY_PATH:-}"
 
@@ -401,9 +408,13 @@ fi
 
 # GeneralsX @bugfix BenderAI 01/04/2026 Select default Zero Hour asset path by .big presence, with GeneralsMD fallback.
 # Default asset paths matching the standard macOS deploy layout (allow user override)
-export CNC_GENERALS_PATH="${CNC_GENERALS_PATH:-${HOME}/GeneralsX/Generals}"
+export CNC_GENERALS_PATH="${CNC_GENERALS_PATH:-${DEFAULT_CNC_GENERALS_PATH}}"
 if [[ -z "${CNC_GENERALS_ZH_PATH:-}" ]]; then
-    if [[ -d "${HOME}/GeneralsX/GeneralsZH" && -n "$(compgen -G "${HOME}/GeneralsX/GeneralsZH/*.big" 2>/dev/null)" ]]; then
+    if [[ -d "${DEFAULT_CNC_GENERALS_ZH_PATH}" && -n "$(compgen -G "${DEFAULT_CNC_GENERALS_ZH_PATH}/*.big" 2>/dev/null)" ]]; then
+        export CNC_GENERALS_ZH_PATH="${DEFAULT_CNC_GENERALS_ZH_PATH}"
+    elif [[ -d "${LOCAL_CNC_GENERALS_ZH_PATH}" && -n "$(compgen -G "${LOCAL_CNC_GENERALS_ZH_PATH}/*.big" 2>/dev/null)" ]]; then
+        export CNC_GENERALS_ZH_PATH="${LOCAL_CNC_GENERALS_ZH_PATH}"
+    elif [[ -d "${HOME}/GeneralsX/GeneralsZH" && -n "$(compgen -G "${HOME}/GeneralsX/GeneralsZH/*.big" 2>/dev/null)" ]]; then
         export CNC_GENERALS_ZH_PATH="${HOME}/GeneralsX/GeneralsZH"
     elif [[ -d "${HOME}/GeneralsX/GeneralsMD" && -n "$(compgen -G "${HOME}/GeneralsX/GeneralsMD/*.big" 2>/dev/null)" ]]; then
         export CNC_GENERALS_ZH_PATH="${HOME}/GeneralsX/GeneralsMD"
@@ -439,6 +450,14 @@ fi
 
 exec "${BIN_DIR}/GeneralsXZH" "$@"
 WRAPPER
+sed_default_generals_path="$(printf '%s' "${DEFAULT_CNC_GENERALS_PATH}" | sed 's/[\/&]/\\&/g')"
+sed_default_generals_zh_path="$(printf '%s' "${DEFAULT_CNC_GENERALS_ZH_PATH}" | sed 's/[\/&]/\\&/g')"
+sed_local_generals_zh_path="$(printf '%s' "${LOCAL_CNC_GENERALS_ZH_PATH}" | sed 's/[\/&]/\\&/g')"
+sed -i '' \
+    -e "s/__GX_DEFAULT_CNC_GENERALS_PATH__/${sed_default_generals_path}/g" \
+    -e "s/__GX_DEFAULT_CNC_GENERALS_ZH_PATH__/${sed_default_generals_zh_path}/g" \
+    -e "s/__GX_LOCAL_CNC_GENERALS_ZH_PATH__/${sed_local_generals_zh_path}/g" \
+    "${MACOS_DIR}/run.sh"
 chmod +x "${MACOS_DIR}/run.sh"
 
 # Keep compatibility with direct calls using the game name.
@@ -454,11 +473,25 @@ exec "${SCRIPT_DIR}/GeneralsXZH.app/Contents/MacOS/run.sh" "$@"
 RUNNER
 chmod +x "${STAGE_DIR}/run.sh"
 
+# Homebrew dylibs are often read-only and may carry provenance/quarantine
+# metadata. Normalize the staged app before zipping so local launches do not
+# trip Gatekeeper checks on copied dependencies.
+echo "  + normalizing permissions and local code signature"
+chmod -R u+w "${APP_DIR}" "${STAGE_DIR}/run.sh"
+xattr -cr "${APP_DIR}" "${STAGE_DIR}/run.sh" 2>/dev/null || true
+if [[ "${ADHOC_CODESIGN}" == "1" ]]; then
+    if command -v codesign >/dev/null 2>&1; then
+        codesign --force --deep --sign - "${APP_DIR}"
+    else
+        echo "WARNING: codesign not found; app bundle will not be ad-hoc signed"
+    fi
+fi
+
 # Create zip
 echo ""
 echo "Creating ${OUTPUT_ZIP}..."
 rm -f "${OUTPUT_ZIP}"
-(cd "${STAGE_DIR}" && zip -r "${OUTPUT_ZIP}" "${APP_DIR_NAME}" run.sh)
+(cd "${STAGE_DIR}" && zip -yr "${OUTPUT_ZIP}" "${APP_DIR_NAME}" run.sh)
 
 echo ""
 echo "Bundle complete: ${OUTPUT_ZIP}"
@@ -471,5 +504,5 @@ echo "  2) run: ./run.sh -win"
 echo "  3) or open: open ${APP_DIR_NAME}"
 echo ""
 echo "Runtime env defaults inside app launcher:"
-echo '  CNC_GENERALS_PATH=$HOME/GeneralsX/Generals'
-echo '  CNC_GENERALS_ZH_PATH=$HOME/GeneralsX/GeneralsZH (fallback: $HOME/GeneralsX/GeneralsMD)'
+echo "  CNC_GENERALS_PATH=${DEFAULT_CNC_GENERALS_PATH}"
+echo "  CNC_GENERALS_ZH_PATH=${DEFAULT_CNC_GENERALS_ZH_PATH} (fallback: ${LOCAL_CNC_GENERALS_ZH_PATH}, then \$HOME/GeneralsX/GeneralsZH, then \$HOME/GeneralsX/GeneralsMD)"
