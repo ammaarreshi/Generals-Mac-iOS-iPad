@@ -19,7 +19,7 @@ This directory contains workflows and configuration files from the original Supe
 
 ## Rationale
 
-The GeneralsX project focuses on cross-platform ports (Linux, macOS, Windows) of the modern SDL3+DXVK+OpenAL stack. The original SuperHackers CI tested multiple legacy presets (vc6, win32, vc6-profile, etc.) and replay compatibility, which are outside the scope of the current modernization effort.
+The GeneralsX project focuses on cross-platform ports (Linux, macOS, Windows) of the modern SDL3+DXVK+MiniAudio stack. The original SuperHackers CI tested multiple legacy presets (vc6, win32, vc6-profile, etc.) and replay compatibility, which are outside the scope of the current modernization effort.
 
 **Active CI**: See `.github/workflows/ci.yml` for the current GeneralsX pipeline.
 

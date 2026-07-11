@@ -140,6 +140,43 @@
 	- `flatpak-builder --user --build-only` now advances to SDK update/install phase (instead of failing on missing system remote refs).
 - Prevention: For Flatpak work, never copy `.so` files from host system paths into app runtime. Build inside SDK and ship only artifacts produced by the manifest modules.
 
+## Session 2026-04-12 - LAN lobby visibility must be traced at render and prune points, not only at announce receipt
+
+- Problem: Logs could show `handleGameAnnounce` success while the user still reported that the LAN lobby list did not visibly retain the remote game.
+- Code finding: The LAN lobby callback does not apply extra compatibility filtering; it forwards `m_games` directly into `LANDisplayGameList`.
+- Remaining suspects: a parsed game can still fail to appear usefully if its row content is unexpected, or it can disappear shortly after due to `lastHeard`-based pruning.
+- Process improvement: For LAN lobby regressions, instrument both row rendering and timeout-driven removal in addition to message receive/parse logs.
+
+## Session 2026-04-11 - LAN auto-IP and global broadcast can hide hosts cross-platform
+
+- Problem: Linux and macOS builds failed to discover each other in the LAN lobby, and same-platform behavior remained uncertain without multiple test machines per OS.
+- Code finding: LAN discovery sends to a fixed global broadcast target (`INADDR_BROADCAST` / `255.255.255.255`) and LAN menu startup can auto-pick the first enumerated non-loopback IP.
+- Risk: On macOS/Linux systems with VPN/Docker/virtual NICs, first-IP selection can bind sockets to a non-game interface, and global broadcast may not reach peers as expected for the active subnet.
+- Process improvement: For LAN regressions, always log selected bind IP, broadcast destination, bind/send error codes, and incoming source addresses before judging protocol-level compatibility.
+- Prevention: Prefer interface-aware LAN discovery (default-route NIC + subnet broadcast calculation) and keep manual IP override visible/easy in options.
+
+## Session 2026-04-12 - LAN join accept must stay unicast to avoid host-only false positives
+
+- Problem: In direct-connect tests, the host sometimes showed the remote player in the game lobby while the joining machine still timed out and never entered the lobby.
+- Evidence: Fresh `[LAN86]` logs showed the host receiving the join request and then emitting `MSG_JOIN_ACCEPT` as broadcast (`255.255.255.255`) instead of sending it back directly to the joining client IP.
+- Root cause: `LANAPI::handleRequestJoin()` zeroed the response target after adding the player locally, so `sendMessage()` fell through to the broadcast path for the join-accept packet.
+- Fix: Keep the requester IP as the response target for join accept/deny packets; only local game-state updates should be host-local.
+- Prevention: For request/response handshake packets (`REQUEST_JOIN`, `JOIN_ACCEPT`, `JOIN_DENY`), never repurpose the destination selection based on local slot mutation; log both sender and final response target during debugging.
+
+## Session 2026-04-12 - In-game LAN control packets need directed delivery on mixed OS networks
+
+- Problem: Even after direct-connect join success, clients could miss host-driven updates (game options, game start, and host leave effects), producing partial desync UX.
+- Evidence: Join handshake traffic succeeded with unicast, but follow-up control behavior matched packet classes still emitted as broadcast without explicit destination.
+- Fix: Prefer directed fan-out to known human slots for in-game control/state packets, keeping broadcast only as fallback when no slot target exists.
+- Prevention: In cross-platform LAN paths, treat broadcast as discovery-only by default; use explicit per-slot delivery for game/session control events.
+
+## Session 2026-04-12 - LAN discovery should prefer subnet broadcast over global broadcast
+
+- Problem: LAN lobby discovery remained unreliable across macOS/Linux even when direct-connect worked.
+- Evidence: Discovery still depended on global broadcast `255.255.255.255`, which may not be forwarded/handled consistently on mixed-network setups.
+- Fix: In POSIX builds, collect broadcast addresses from active IPv4 interfaces matching the selected local LAN IP and send broadcast packets to those subnet addresses first; keep global broadcast as fallback.
+- Prevention: For multi-platform LAN discovery, avoid single global broadcast as the only path; use interface-scoped subnet broadcast to reduce network-policy sensitivity.
+
 ## Session 2026-04-09 - libxcb Flatpak PoC needs newer source libs, not host baseline copy
 
 ## Session 2026-04-11 - 8-player macOS crash points to AI guard-state null dereference path

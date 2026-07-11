@@ -142,6 +142,7 @@ public:
 	Bool m_enableStaticLOD;
 	Int m_terrainLODTargetTimeMS;
 	Bool m_useAlternateMouse;
+	Bool m_useRightMouseScrollWithAlternateMouse; // TheSuperHackers @feature User option for RMB scroll in Alternate Mouse mode.
 	Bool m_clientRetaliationModeEnabled;
 	Bool m_doubleClickAttackMove;
 	Bool m_rightMouseAlwaysScrolls;
@@ -430,6 +431,9 @@ public:
 	// TheSuperHackers @feature L3-M 21/08/2025 toggle the money per minute display, false shows only the original current money
 	Bool m_showMoneyPerMinute;
 	Bool m_allowMoneyPerMinuteForPlayer;
+
+	// TheSuperHackers @feature bobtista 28/06/2026 user-configurable speed multiplier for game window transitions
+	Real m_gameWindowTransitionSpeedMultiplier;
 
 	Real m_shakeSubtleIntensity;			///< Intensity for shaking a camera with SHAKE_SUBTLE
 	Real m_shakeNormalIntensity;			///< Intensity for shaking a camera with SHAKE_NORMAL

@@ -129,7 +129,7 @@ set(GAMEENGINEDEVICE_SRC
     Source/W3DDevice/GameClient/GUI/Gadget/W3DTabControl.cpp
     Source/W3DDevice/GameClient/GUI/Gadget/W3DTextEntry.cpp
     Source/W3DDevice/GameClient/GUI/Gadget/W3DVerticalSlider.cpp
-#    Source/W3DDevice/GameClient/GUI/GUICallbacks/W3DControlBar.cpp
+    Source/W3DDevice/GameClient/GUI/GUICallbacks/W3DControlBar.cpp
 #    Source/W3DDevice/GameClient/GUI/GUICallbacks/W3DMainMenu.cpp
 #    Source/W3DDevice/GameClient/GUI/GUICallbacks/W3DMOTD.cpp
 #    Source/W3DDevice/GameClient/GUI/W3DGameFont.cpp
@@ -275,6 +275,26 @@ if(SAGE_USE_OPENAL)
             Source/VideoDevice/FFmpeg/FFmpegFile.cpp
         )
     endif()
+endif()
+
+# GeneralsX @feature fbraz 11/06/2026 MiniAudio audio library (alternative to OpenAL)
+# miniaudio is a single-header C library that replaces OpenAL + FFmpeg for audio decoding/playback.
+# Reference: https://miniaud.io/
+# Reference: https://github.com/feliwir/CnC_Generals_Zero_Hour (MiniAudio backend by Stephan Vedder)
+if(SAGE_USE_MINIAUDIO)
+    if(NOT TARGET miniaudio_lib)
+        message(FATAL_ERROR "SAGE_USE_MINIAUDIO is ON but miniaudio_lib target not found. Include cmake/miniaudio.cmake first.")
+    endif()
+
+    target_link_libraries(corei_gameenginedevice_public INTERFACE miniaudio_lib)
+
+    target_sources(corei_gameenginedevice_private INTERFACE
+        Include/MiniAudioDevice/MiniAudioCompat.h
+        Include/MiniAudioDevice/MiniAudioManager.h
+        Include/MiniAudioDevice/MiniAudioStream.h
+        Source/MiniAudioDevice/MiniAudioManager.cpp
+        Source/MiniAudioDevice/MiniAudioStream.cpp
+    )
 endif()
 
 if(RTS_BUILD_OPTION_FFMPEG)

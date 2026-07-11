@@ -113,16 +113,12 @@ static_assert(ARRAY_SIZE(TheDrawableIconNames) == MAX_ICONS + 1, "Incorrect arra
 // GeneralsX @bugfix GitHubCopilot 24/05/2026 Resolve Drawable caption fonts through a deterministic fallback chain when localized font names are unavailable.
 // GeneralsX @bugfix FelipeBraz 03/06/2026 Preferred known Unicode-supporting fonts (Arial Unicode MS) over configured DrawableCaptionFont
 // to ensure Cyrillic and other non-Latin characters render correctly via DXVK on macOS.
-// GeneralsX @test FelipeBraz 03/06/2026 TEST: Hardcode Arial Unicode MS to verify 3D rendering
 static GameFont *ResolveDrawableCaptionFont()
 {
-	char log_buffer[512];
 	GameFont *font = nullptr;
 
 	if (TheFontLibrary == nullptr || TheInGameUI == nullptr)
 	{
-		sprintf(log_buffer, "[GX-ISSUE144] Drawable ResolveCaptionFont missing TheFontLibrary=%p TheInGameUI=%p", TheFontLibrary, TheInGameUI);
-		fprintf(stderr, "%s\n", log_buffer);
 		return nullptr;
 	}
 
@@ -130,16 +126,10 @@ static GameFont *ResolveDrawableCaptionFont()
 	const Int pointSize = TheGlobalLanguageData ? TheGlobalLanguageData->adjustFontSize(basePointSize) : basePointSize;
 	const Bool bold = TheInGameUI->isDrawableCaptionBold();
 
-	// TEST: hardcode Arial Unicode MS
 	font = TheFontLibrary->getFont("Arial Unicode MS", pointSize, bold);
-	sprintf(log_buffer, "[GX-ISSUE144] TEST ResolveCaptionFont Arial Unicode MS %s pointSize=%d bold=%d",
-		font ? "HIT" : "MISS", pointSize, bold);
-	fprintf(stderr, "%s\n", log_buffer);
 	if (font) return font;
 
 	font = TheFontLibrary->getFont("Arial", pointSize, bold);
-	sprintf(log_buffer, "[GX-ISSUE144] TEST ResolveCaptionFont Arial %s pointSize=%d bold=%d",
-		font ? "HIT" : "MISS", pointSize, bold);
 	return font;
 }
 
@@ -398,13 +388,6 @@ Drawable::Drawable( const ThingTemplate *thingTemplate, DrawableStatusBits statu
 	{
 		GameFont *ctorFont = ResolveDrawableCaptionFont();
 		m_constructDisplayString->setFont(ctorFont);
-		{
-			char _lb[256];
-			sprintf(_lb, "[GX-ISSUE144] Drawable ctor constructDS font=%s size=%d",
-				ctorFont ? ctorFont->nameString.str() : "NULL",
-				ctorFont ? ctorFont->pointSize : -1);
-			fprintf(stderr, "%s\n", _lb);
-		}
 	}
 
 	m_ambientSound = nullptr;
@@ -1615,7 +1598,7 @@ void Drawable::calcPhysicsXformHoverOrWings( const Locomotor *locomotor, Physics
 			const Real TINY_DZ = 0.001f;
 			if (fabs(vel->z) > TINY_DZ)
 			{
-				Real pitch = atan2(vel->z, sqrt(sqr(vel->x)+sqr(vel->y)));
+				Real pitch = WWMath::Atan2Origin(vel->z, WWMath::SqrtOrigin(sqr(vel->x)+sqr(vel->y)));
 				m_locoInfo->m_pitch -= Z_VEL_PITCH_COEFF * pitch;
 			}
 		}
@@ -1654,8 +1637,8 @@ void Drawable::calcPhysicsXformHoverOrWings( const Locomotor *locomotor, Physics
 	const Real ELEVATOR_CORRECTION_DEGREE = locomotor->getElevatorCorrectionDegree();
 	const Real ELEVATOR_CORRECTION_RATE   = locomotor->getElevatorCorrectionRate();
 
-  info.m_totalYaw = RUDDER_CORRECTION_DEGREE * sin( m_locoInfo->m_yawModulator += RUDDER_CORRECTION_RATE );
-  info.m_totalPitch += ELEVATOR_CORRECTION_DEGREE * cos( m_locoInfo->m_pitchModulator += ELEVATOR_CORRECTION_RATE );
+  info.m_totalYaw = RUDDER_CORRECTION_DEGREE * WWMath::SinTrig( m_locoInfo->m_yawModulator += RUDDER_CORRECTION_RATE );
+  info.m_totalPitch += ELEVATOR_CORRECTION_DEGREE * WWMath::CosTrig( m_locoInfo->m_pitchModulator += ELEVATOR_CORRECTION_RATE );
 
 
 	info.m_totalZ = 0.0f;
@@ -1738,7 +1721,7 @@ void Drawable::calcPhysicsXformTreads( const Locomotor *locomotor, PhysicsXformI
 		maxCenterDist *= OVERLAP_SHRINK_FACTOR;
 		if (centerDistSqr < sqr(maxCenterDist))
 		{
-			Real centerDist = sqrtf(centerDistSqr);
+			Real centerDist = WWMath::SqrtfOrigin(centerDistSqr);
 			Real amount = 1.0f - centerDist/maxCenterDist;
 			if (amount < 0.0f)
 				amount = 0.0f;
@@ -1780,8 +1763,8 @@ void Drawable::calcPhysicsXformTreads( const Locomotor *locomotor, PhysicsXformI
 				up.normalize();
 
 				Coord3D prp;
-				prp.crossProduct( &v, &up, &prp );
-				normal.crossProduct( &prp, &v, &normal );
+				prp.crossProduct( v, up, prp );
+				normal.crossProduct( prp, v, normal );
 
 				// compute unit normal
 				normal.normalize();
@@ -3668,8 +3651,6 @@ void Drawable::drawDisabled(const IRegion2D* healthBarRegion)
 //-------------------------------------------------------------------------------------------------
 void Drawable::drawConstructPercent( const IRegion2D *healthBarRegion )
 {
-	char log_buffer[512];
-
 	// this data is in an attached object
 	Object *obj = getObject();
 
@@ -3699,11 +3680,6 @@ void Drawable::drawConstructPercent( const IRegion2D *healthBarRegion )
 		if (m_constructDisplayString)
 		{
 			m_constructDisplayString->setFont(ResolveDrawableCaptionFont());
-			sprintf(log_buffer,
-				"[GX-ISSUE144] Drawable construct string allocated drawable=%p obj=%p",
-				this,
-				obj);
-			fprintf(stderr, "%s\n", log_buffer);
 		}
 	}
 
@@ -3712,43 +3688,11 @@ void Drawable::drawConstructPercent( const IRegion2D *healthBarRegion )
 	{
 		UnicodeString buffer;
 
-		// Log the raw format string from GameText before formatting
-		{
-			static bool _fetchLogged = false;
-			if (!_fetchLogged) {
-				_fetchLogged = true;
-				UnicodeString fetchResult = TheGameText->fetch("CONTROLBAR:UnderConstructionDesc");
-				const WideChar *fws = fetchResult.str();
-				char fnarrow[128] = {};
-				for (int _fi = 0; _fi < 64 && fws[_fi]; ++_fi)
-					fnarrow[_fi] = (fws[_fi] < 128) ? (char)fws[_fi] : '?';
-				sprintf(log_buffer,
-					"[GX-ISSUE144] fetch UnderConstructionDesc len=%d text=\"%s\"",
-					fetchResult.getLength(), fnarrow);
-				fprintf(stderr, "%s\n", log_buffer);
-			}
-		}
-
 		buffer.format( TheGameText->fetch("CONTROLBAR:UnderConstructionDesc"), obj->getConstructionPercent());
 		m_constructDisplayString->setText( buffer );
 
 		// record this percent as our last displayed so we don't un-necessarily rebuild the string
 		m_lastConstructDisplayed = obj->getConstructionPercent();
-
-		// Log actual text content (convert wchar to narrow for logging)
-		const WideChar *ws = buffer.str();
-		char narrow[128] = {};
-		for (int _i = 0; _i < 64 && ws[_i]; ++_i)
-			narrow[_i] = (ws[_i] < 128) ? (char)ws[_i] : '?';
-		GameFont *curFont = m_constructDisplayString->getFont();
-		sprintf(log_buffer,
-			"[GX-ISSUE144] Drawable construct text update drawable=%p pct=%g len=%d text=\"%s\" font=%s",
-			this,
-			(double)obj->getConstructionPercent(),
-			buffer.getLength(),
-			narrow,
-			curFont ? curFont->nameString.str() : "NULL");
-		fprintf(stderr, "%s\n", log_buffer);
 	}
 
 	// get center position in drawable
@@ -3766,16 +3710,6 @@ void Drawable::drawConstructPercent( const IRegion2D *healthBarRegion )
 	Color color = GameMakeColor( 255, 255, 255, 255 );
 	Color dropColor = GameMakeColor( 0, 0, 0, 255 );
 	Int tw = m_constructDisplayString->getWidth();
-	static bool _constructDrawLogged = false;
-	if (!_constructDrawLogged) {
-		GameFont *df = m_constructDisplayString->getFont();
-		sprintf(log_buffer,
-			"[GX-ISSUE144] Drawable construct draw drawable=%p screen=(%d,%d) width=%d font=%s",
-			this, screen.x, screen.y, tw,
-			df ? df->nameString.str() : "NULL");
-		fprintf(stderr, "%s\n", log_buffer);
-		_constructDrawLogged = true;
-	}
 	screen.x -= (tw / 2);
 	m_constructDisplayString->draw( screen.x, screen.y, color, dropColor );
 
@@ -4355,13 +4289,9 @@ const Matrix3D *Drawable::getTransformMatrix() const
 //-------------------------------------------------------------------------------------------------
 void Drawable::setCaptionText( const UnicodeString& captionText )
 {
-	char log_buffer[512];
-
 	if (captionText.isEmpty())
 	{
 		clearCaptionText();
-		sprintf(log_buffer, "[GX-ISSUE144] Drawable caption clear-request drawable=%p", this);
-		fprintf(stderr, "%s\n", log_buffer);
 		return;
 	}
 
@@ -4374,12 +4304,6 @@ void Drawable::setCaptionText( const UnicodeString& captionText )
 		GameFont *font = ResolveDrawableCaptionFont();
 		m_captionDisplayString->setFont( font );
 		m_captionDisplayString->setText( sanitizedString );
-		sprintf(log_buffer,
-			"[GX-ISSUE144] Drawable caption new drawable=%p textLength=%d font=%p",
-			this,
-			sanitizedString.getLength(),
-			font);
-		fprintf(stderr, "%s\n", log_buffer);
 	}
 	else
 	{
@@ -4387,11 +4311,6 @@ void Drawable::setCaptionText( const UnicodeString& captionText )
 		if( m_captionDisplayString->getText().compare(sanitizedString) != 0 )
 		{
 			m_captionDisplayString->setText( sanitizedString );
-			sprintf(log_buffer,
-				"[GX-ISSUE144] Drawable caption update drawable=%p textLength=%d",
-				this,
-				sanitizedString.getLength());
-			fprintf(stderr, "%s\n", log_buffer);
 		}
 	}
 }
@@ -4577,7 +4496,7 @@ void Drawable::startAmbientSound(BodyDamageType dt, TimeOfDay tod, Bool onlyIfPe
 			  {
 				  //Check if it's close enough to try playing (optimization)
 				  Coord3D vector = *getPosition();
-				  vector.sub( TheAudio->getListenerPosition() );
+				  vector.sub( *TheAudio->getListenerPosition() );
 				  Real distSqr = vector.lengthSqr();
 				  if( distSqr < sqr( info->m_maxDistance ) )
 				  {

@@ -104,7 +104,7 @@ public:
 	const ChinookAIUpdateModuleData* friend_getData() const { return getChinookAIUpdateModuleData(); }
 	void friend_setFlightStatus(ChinookFlightStatus a) { m_flightStatus = a; }
 
-	void recordOriginalPosition( const Coord3D &pos ) { m_originalPos.set( &pos ); }
+	void recordOriginalPosition( const Coord3D &pos ) { m_originalPos.set( pos ); }
 	const Coord3D* getOriginalPosition() const { return &m_originalPos; }
 
 	virtual Int getUpgradedSupplyBoost() const override;

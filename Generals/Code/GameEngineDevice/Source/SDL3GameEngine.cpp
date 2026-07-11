@@ -30,7 +30,10 @@
 
 #include "SDL3GameEngine.h"
 #include "Common/GameAudio.h"
-#ifdef SAGE_USE_OPENAL
+// GeneralsX @build Mr. Meeseeks 16/06/2026 Make audio headers mutually exclusive to avoid redefinition conflicts
+#ifdef SAGE_USE_MINIAUDIO
+#include "MiniAudioDevice/MiniAudioManager.h"
+#elif defined(SAGE_USE_OPENAL)
 #include "OpenALAudioDevice/OpenALAudioManager.h"
 #endif
 #include "SDL3Device/GameClient/SDL3Mouse.h"
@@ -276,6 +279,10 @@ void SDL3GameEngine::pollSDL3Events(void)
 
 			case SDL_EVENT_WINDOW_FOCUS_GAINED:
 				m_IsActive = true;
+				if (TheMouse) {
+					TheMouse->regainFocus();
+					TheMouse->refreshCursorCapture();
+				}
 				break;
 
 			case SDL_EVENT_WINDOW_FOCUS_LOST:
@@ -284,6 +291,21 @@ void SDL3GameEngine::pollSDL3Events(void)
 					SDL_StopTextInput(m_SDLWindow);
 					m_IsTextInputActive = false;
 					m_TextInputFocusWindow = nullptr;
+				}
+				if (TheMouse) {
+					TheMouse->loseFocus();
+				}
+				break;
+
+			case SDL_EVENT_WINDOW_MOUSE_ENTER:
+				if (TheMouse) {
+					TheMouse->onCursorMovedInside();
+				}
+				break;
+
+			case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+				if (TheMouse) {
+					TheMouse->onCursorMovedOutside();
 				}
 				break;
 
@@ -551,16 +573,21 @@ WebBrowser *SDL3GameEngine::createWebBrowser(void)
  * Factory method: AudioManager
  * GeneralsX @feature BenderAI 10/03/2026 - Use OpenAL when available, otherwise silent dummy
  * GeneralsX @bugfix Copilot 15/04/2026 Match upstream GameEngine pure-virtual signature after sync.
+ * GeneralsX @feature fbraz 11/06/2026 - Add MiniAudio support as alternative to OpenAL
  */
 AudioManager *SDL3GameEngine::createAudioManager(Bool dummy)
 {
 	(void)dummy;
 	fprintf(stderr, "INFO: SDL3GameEngine::createAudioManager()\n");
-#ifdef SAGE_USE_OPENAL
+
+#ifdef SAGE_USE_MINIAUDIO
+	fprintf(stderr, "INFO: Creating MiniAudio audio backend\n");
+	return NEW MiniAudioManager;
+#elif defined(SAGE_USE_OPENAL)
 	fprintf(stderr, "INFO: Using OpenAL audio backend\n");
 	return NEW OpenALAudioManager;
 #else
-	fprintf(stderr, "INFO: OpenAL not available - using AudioManagerDummy\n");
+	fprintf(stderr, "INFO: No audio backend available - using AudioManagerDummy\n");
 	return NEW AudioManagerDummy;
 #endif
 }

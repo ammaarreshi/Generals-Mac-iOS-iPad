@@ -135,7 +135,7 @@ struct PristineBoneInfo
 	Int boneIndex;
 };
 //typedef std::hash_map< NameKeyType, PristineBoneInfo, rts::hash<NameKeyType>, rts::equal_to<NameKeyType> > PristineBoneInfoMap;
-typedef std::map< NameKeyType, PristineBoneInfo, std::less<NameKeyType> > PristineBoneInfoMap;
+typedef std::map< NameKeyType, PristineBoneInfo, std::less<NameKeyType>/**/> PristineBoneInfoMap;
 
 //-------------------------------------------------------------------------------------------------
 
@@ -268,7 +268,7 @@ typedef std::vector<ModelConditionInfo> ModelConditionVector;
 
 //-------------------------------------------------------------------------------------------------
 //typedef std::hash_map< TransitionSig, ModelConditionInfo, std::hash<TransitionSig>, std::equal_to<TransitionSig> > TransitionMap;
-typedef std::map< TransitionSig, ModelConditionInfo, std::less<TransitionSig> > TransitionMap;
+typedef std::map< TransitionSig, ModelConditionInfo, std::less<TransitionSig>/**/> TransitionMap;
 
 //-------------------------------------------------------------------------------------------------
 // this is more efficient and also helps solve a projectile-launch-offset problem for double-upgraded

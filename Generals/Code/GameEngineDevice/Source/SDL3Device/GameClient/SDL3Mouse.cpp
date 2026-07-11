@@ -31,11 +31,13 @@
 #include "SDL3Device/GameClient/SDL3Mouse.h"
 #include <cstdio>
 #include <cstring>
+#include <cmath>
 
 // GeneralsX @bugfix felipebraz 18/02/2026 Include GameLogic for frame tracking
 #include "GameLogic/GameLogic.h"
 // GeneralsX @bugfix felipebraz 20/02/2026 Include Display to get internal resolution for coordinate scaling
 #include "GameClient/Display.h"
+#include "GameClient/InGameUI.h"
 // GeneralsX @bugfix BenderAI 22/02/2026 Add SDL3_image for cursor loading
 // SDL3_image now finds system libpng via pkg-config (CMAKE_PREFIX_PATH reordered in cmake/sdl3.cmake)
 #include <SDL3_image/SDL_image.h>
@@ -133,14 +135,16 @@ SDL3Mouse::SDL3Mouse(SDL_Window* window)
 	  m_Window(window),
 	  m_IsCaptured(false),
 	  m_IsVisible(true),
-	  m_LostFocus(false),           // GeneralsX @bugfix felipebraz 18/02/2026 Initialize focus state
+	  m_LostFocus(false),           // GeneralsX @bugfix felipebraz 18/02/2026 Track window focus state
 	  m_nextFreeIndex(0),   // Fighter19 pattern: write position for new events
 	  m_nextGetIndex(0),    // Fighter19 pattern: read position for events
 	  m_LeftButtonDownTime(0),
 	  m_RightButtonDownTime(0),
 	  m_MiddleButtonDownTime(0),
 	  m_LastFrameNumber(0),  // GeneralsX @bugfix felipebraz 18/02/2026 Initialize frame tracking
-	  m_directionFrame(0)    // GeneralsX @bugfix BenderAI 22/02/2026 Initialize cursor direction frame
+	  m_directionFrame(0),    // GeneralsX @bugfix BenderAI 22/02/2026 Initialize cursor direction frame
+	  m_lastSetCursor(INVALID_MOUSE_CURSOR),
+	  m_lastSetDirectionFrame(-1)
 {
 	// GeneralsX @bugfix BenderAI 18/02/2026 Temporarily disable debug logging (Phase 1.8)
 	// fprintf(stderr, "DEBUG: SDL3Mouse::SDL3Mouse() created\n");
@@ -375,8 +379,8 @@ void SDL3Mouse::init(void)
 	m_inputMovesAbsolute = TRUE;
 
 	// Show cursor by default
-	// GeneralsX @bugfix BenderAI 10/03/2026 - Use setVisibility() to keep m_visible in sync
-	setVisibility(TRUE);
+	SDL_ShowCursor();
+	m_IsVisible = true;
 
 	// Clear event buffer - Fighter19 pattern
 	// GeneralsX @refactor felipebraz 16/02/2026
@@ -399,8 +403,11 @@ void SDL3Mouse::reset(void)
 	Mouse::reset();
 
 	releaseCapture();
-	// GeneralsX @bugfix BenderAI 10/03/2026 - Use setVisibility() to keep m_visible in sync
-	setVisibility(TRUE);
+	SDL_ShowCursor();
+	m_IsVisible = true;
+
+	m_lastSetCursor = INVALID_MOUSE_CURSOR;
+	m_lastSetDirectionFrame = -1;
 
 	// Clear event buffer - Fighter19 pattern
 	// GeneralsX @refactor felipebraz 16/02/2026
@@ -455,6 +462,16 @@ void SDL3Mouse::setCursor(MouseCursor cursor)
 	if (m_LostFocus)  // GeneralsX @bugfix BenderAI 22/02/2026 Fix case: m_LostFocus not m_lostFocus
 		return;	//stop messing with mouse cursor if we don't have focus.
 
+	setCursorDirection(cursor);
+
+	if (cursor == m_lastSetCursor && m_directionFrame == m_lastSetDirectionFrame)
+	{
+		return; // Avoid redundant OS cursor sets
+	}
+
+	m_lastSetCursor = cursor;
+	m_lastSetDirectionFrame = m_directionFrame;
+
 	bool bUseDefaultCursor = false;
 	if (cursor == NONE || !m_visible)
 	{
@@ -491,6 +508,44 @@ void SDL3Mouse::setCursor(MouseCursor cursor)
 	m_currentCursor = cursor;
 }
 
+void SDL3Mouse::draw(void)
+{
+	setCursor(m_currentCursor);
+}
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#endif
+
+void SDL3Mouse::setCursorDirection(MouseCursor cursor)
+{
+	Coord2D offset = {0, 0};
+	//Check if we have a directional cursor that needs different images for each direction
+	if (m_cursorInfo[cursor].numDirections > 1 && TheInGameUI && TheInGameUI->isScrolling())
+	{
+		offset = TheInGameUI->getScrollAmount();
+		if (offset.x || offset.y)
+		{
+			offset.normalize();
+			Real theta = atan2(offset.y, offset.x);
+			theta = fmod(theta+M_PI*2,M_PI*2);
+			Int numDirections=m_cursorInfo[m_currentCursor].numDirections;
+			//Figure out which of our predrawn cursor orientations best matches the
+			//actual cursor direction.  Frame 0 is assumed to point right and continue
+			//clockwise.
+			m_directionFrame=(Int)(theta/(2.0f*M_PI/(Real)numDirections)+0.5f);
+			if (m_directionFrame >= numDirections)
+				m_directionFrame = 0;
+		}
+		else
+		{
+			m_directionFrame=0;
+		}
+	}
+	else
+		m_directionFrame = 0;
+}
+
 /**
  * Set cursor visibility
  * GeneralsX @bugfix BenderAI 10/03/2026 - Call parent to keep m_visible in sync.
@@ -500,14 +555,14 @@ void SDL3Mouse::setCursor(MouseCursor cursor)
  */
 void SDL3Mouse::setVisibility(Bool visible)
 {
-	Mouse::setVisibility(visible);  // Keep m_visible in sync (used by setCursor())
+	// Always tell parent cursor is visible so setCursor() selects the correct cursor type.
+	// On Windows, setVisibility(FALSE) hides OS cursor so W3D draws its own. On SDL3
+	// there is no W3D cursor rendering, so m_visible must stay TRUE.
+	Mouse::setVisibility(TRUE);
 	m_IsVisible = visible;
 
-	if (visible) {
-		SDL_ShowCursor();
-	} else {
-		SDL_HideCursor();
-	}
+	// Always keep SDL cursor visible since it's the only cursor renderer.
+	SDL_ShowCursor();
 }
 
 /**
@@ -545,8 +600,9 @@ void SDL3Mouse::capture(void)
 
 	m_IsCaptured = true;
 
-	// GeneralsX @bugfix BenderAI 18/02/2026 Temporarily disable debug logging (Phase 1.8)
-	// fprintf(stderr, "DEBUG: SDL3Mouse::capture() - mouse captured\n");
+	// @fix Notify base class so isCursorCaptured() returns true.
+	// This is required for edge scrolling (canScrollAtScreenEdge checks isCursorCaptured).
+	onCursorCaptured(true);
 }
 
 /**
@@ -565,8 +621,8 @@ void SDL3Mouse::releaseCapture(void)
 
 	m_IsCaptured = false;
 
-	// GeneralsX @bugfix BenderAI 18/02/2026 Temporarily disable debug logging (Phase 1.8)
-	// fprintf(stderr, "DEBUG: SDL3Mouse::releaseCapture() - mouse released\n");
+	// @fix Notify base class so isCursorCaptured() returns false.
+	onCursorCaptured(false);
 }
 
 /**
@@ -700,14 +756,12 @@ void SDL3Mouse::translateButtonEvent(const SDL_MouseButtonEvent& event, MouseIO 
 	// Map SDL3 button to MouseIO button
 	switch (event.button) {
 		case SDL_BUTTON_LEFT:
-			// GeneralsX @bugfix BenderAI 18/02/2026 Temporarily disable debug logging (Phase 1.8)
-			// fprintf(stderr, "[MOUSE] Left button: %s\n", event.down ? "DOWN" : "UP");
-			// GeneralsX @bugfix felipebraz 18/02/2026 Use native SDL3 clicks field for double-click
-			// SDL3 button events contain clicks count: 1=single, 2=double
-			if (event.clicks >= 2) {
+			// GeneralsX @bugfix BenderAI 07/03/2026 Only detect double-click on DOWN events
+			// (matching right/middle button logic). Without this check, rapid clicks cause
+			// UP events with clicks>=2 to become MBS_DoubleClick, which GadgetPushButton
+			// doesn't handle, leaving buttons stuck in WIN_STATE_SELECTED (white overlay).
+			if (event.down && event.clicks >= 2) {
 				result->leftState = MBS_DoubleClick;
-				// GeneralsX @bugfix BenderAI 18/02/2026 Temporarily disable debug logging (Phase 1.8)
-				// fprintf(stderr, "[MOUSE] Left double-click detected (clicks=%d)\n", event.clicks);
 			} else {
 				result->leftState = state;
 			}
@@ -758,7 +812,13 @@ void SDL3Mouse::translateWheelEvent(const SDL_MouseWheelEvent& event, MouseIO *r
 
 	// SDL3 wheel: positive = up/away, negative = down/toward user
 	// Multiply by MOUSE_WHEEL_DELTA (120) to match Windows behavior
-	result->wheelPos = (Int)(event.y * MOUSE_WHEEL_DELTA);
+	// GeneralsX @bugfix msmesoft 17/06/2026 macOS "natural scrolling" makes SDL
+	// flag the wheel values as SDL_MOUSEWHEEL_FLIPPED; invert them so the in-game
+	// scroll direction matches the Windows convention regardless of the OS setting.
+	float wheelY = event.y;
+	if (event.direction == SDL_MOUSEWHEEL_FLIPPED)
+		wheelY = -wheelY;
+	result->wheelPos = (Int)(wheelY * MOUSE_WHEEL_DELTA);
 
 	result->leftState = MBS_None;
 	result->rightState = MBS_None;

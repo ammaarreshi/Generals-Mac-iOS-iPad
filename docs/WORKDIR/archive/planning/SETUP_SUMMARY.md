@@ -106,7 +106,7 @@ Your mission (should you choose to accept it):
 
 2. **Study fighter19's DXVK Port**:
    - Query with DeepWiki: `Fighter19/CnC_Generals_Zero_Hour`
-   - Compare files: `diff -r GeneralsMD/ references/fighter19-dxvk-port/GeneralsMD/`
+   - Compare files: `diff -r GeneralsMD/ references/old-refs/fighter19-dxvk-port/GeneralsMD/`
    - Document what applies to Zero Hour
    - **Important**: fighter19 compiles NATIVE Linux ELF binaries (not Windows PE)
    - Uses GCC/Clang on Linux (not MinGW)
@@ -132,7 +132,7 @@ Your mission (should you choose to accept it):
 
 ```bash
 # Set up git remotes for easy diffing
-cd references/fighter19-dxvk-port
+cd references/old-refs/fighter19-dxvk-port
 git remote add upstream https://github.com/Fighter19/CnC_Generals_Zero_Hour.git
 
 cd ../jmarshall-win64-modern
@@ -194,7 +194,7 @@ docker run --rm -v "$PWD:/work" -w /work ubuntu:22.04 bash -c "
 grep -r "IDirect3D8" --include="*.cpp" --include="*.h"
 
 # Compare with fighter19's changes
-diff -r Core/GameEngineDevice/ references/fighter19-dxvk-port/Core/GameEngineDevice/
+diff -r Core/GameEngineDevice/ references/old-refs/fighter19-dxvk-port/Core/GameEngineDevice/
 
 # Open dev blog
 code docs/DEV_BLOG/2026-02-DIARY.md

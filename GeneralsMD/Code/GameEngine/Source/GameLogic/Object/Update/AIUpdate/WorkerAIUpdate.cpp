@@ -1104,7 +1104,7 @@ Bool WorkerAIUpdate::gainOneBox( Int remainingStock )
 		{
 			//figure out whether the best one is considerably far from the previous one (current position)
 			Coord3D delta = *getObject()->getPosition();
-			delta.sub( bestWarehouse->getPosition() );
+			delta.sub( *bestWarehouse->getPosition() );
 			if ( delta.length() > getWarehouseScanDistance()/4)
 			playDepleted = TRUE;
 		}

@@ -32,7 +32,7 @@
 #define MAX_BYTES_PER_CHAR 1
 
 template <class charT>
-class UstringT : public basic_string<charT, string_char_traits<charT> >
+class UstringT : public basic_string<charT, string_char_traits<charT>/**/>
 {
  public:
 		explicit UstringT(int max_charlength) {
@@ -46,8 +46,8 @@ class UstringT : public basic_string<charT, string_char_traits<charT> >
 
       bool     operator==(const UstringT<charT> &other)
       {
-        const basic_string<charT, string_char_traits<charT> > *other_basic=&other;
-        const basic_string<charT, string_char_traits<charT> > *this_basic=this;
+        const basic_string<charT, string_char_traits<charT>/**/> *other_basic=&other;
+        const basic_string<charT, string_char_traits<charT>/**/> *this_basic=this;
         return((*other_basic)==(*this_basic));
       }
 

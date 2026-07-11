@@ -55,6 +55,8 @@
 #include "GameClient/GameWindowTransitions.h"
 #include "GameClient/GameWindow.h"
 #include "GameClient/GameWindowManager.h"
+#include "Common/FramePacer.h"
+#include "Common/GlobalData.h"
 //-----------------------------------------------------------------------------
 // DEFINES ////////////////////////////////////////////////////////////////////
 //-----------------------------------------------------------------------------
@@ -239,7 +241,7 @@ Int TransitionWindow::getTotalFrames()
 //-----------------------------------------------------------------------------
 TransitionGroup::TransitionGroup()
 {
-	m_currentFrame = 0;
+	m_currentFrame = 0.0f;
 	m_fireOnce = FALSE;
 }
 
@@ -256,7 +258,7 @@ TransitionGroup::~TransitionGroup()
 
 void TransitionGroup::init()
 {
-	m_currentFrame = 0;
+	m_currentFrame = 0.0f;
 	m_directionMultiplier = 1;
 	TransitionWindowList::iterator it = m_transitionWindowList.begin();
 	while (it != m_transitionWindowList.end())
@@ -270,13 +272,37 @@ void TransitionGroup::init()
 
 void TransitionGroup::update()
 {
-	m_currentFrame += m_directionMultiplier; // we go forward or backwards depending.
-	TransitionWindowList::iterator it = m_transitionWindowList.begin();
-	while (it != m_transitionWindowList.end())
+	// TheSuperHackers @tweak bobtista GUI transition timing is now decoupled from the render update.
+	// Step every integer frame between the old and new accumulator value so discrete-state-machine
+	// transitions cannot skip a state when the render frame rate dips below the base rate.
+	// TheSuperHackers @feature bobtista 28/06/2026 Scale by the user game window transition speed preference.
+	const Real timeScale = TheFramePacer->getBaseOverUpdateFpsRatio() * TheGlobalData->m_gameWindowTransitionSpeedMultiplier;
+	const Int prevFrame = (Int)m_currentFrame;
+	m_currentFrame += m_directionMultiplier * timeScale;
+	const Int newFrame = (Int)m_currentFrame;
+
+	if( newFrame == prevFrame )
 	{
-		TransitionWindow *tWin = *it;
-		tWin->update(m_currentFrame);
-		it++;
+		return;
+	}
+
+	const Int step = (newFrame > prevFrame) ? 1 : -1;
+	for( Int frame = prevFrame + step; frame != newFrame + step; frame += step )
+	{
+		Bool isFinished = TRUE;
+		TransitionWindowList::iterator it = m_transitionWindowList.begin();
+		while (it != m_transitionWindowList.end())
+		{
+			TransitionWindow *tWin = *it;
+			tWin->update(frame);
+			isFinished &= tWin->isFinished();
+			it++;
+		}
+
+		if( isFinished )
+		{
+			break;
+		}
 	}
 }
 
@@ -315,7 +341,7 @@ void TransitionGroup::reverse()
 		tWin->reverse(totalFrames);
 		it++;
 	}
-	m_currentFrame = totalFrames;
+	m_currentFrame = (Real)totalFrames;
 //	m_currentFrame ++;
 }
 

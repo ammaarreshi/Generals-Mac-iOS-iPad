@@ -351,8 +351,8 @@ Phase 3 is **COMPLETE** when the following is achieved:
 - [ ] Document video triggers (INI files? Hardcoded?)
 
 ### Reference Implementations
-- fighter19: `references/fighter19-dxvk-port/` (check video handling)
-- jmarshall: `references/jmarshall-win64-modern/` (likely still Bink)
+- fighter19: `references/old-refs/fighter19-dxvk-port/` (check video handling)
+- jmarshall: `references/old-refs/jmarshall-win64-modern/` (likely still Bink)
 - dsalzner: `references/dsalzner-linux-attempt/` (check if addressed)
 
 ---

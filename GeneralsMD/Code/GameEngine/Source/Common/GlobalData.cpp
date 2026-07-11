@@ -647,9 +647,10 @@ GlobalData::GlobalData()
 	m_useTreeSway = TRUE;
 	m_useDrawModuleLOD = FALSE;
 	m_useHeatEffects = TRUE;
-	m_useFpsLimit = FALSE;
+	// GeneralsX @tweak felipebraz 20/06/2026 Default render FPS limit to 60 FPS instead of uncapped/0.
+	m_useFpsLimit = TRUE;
 	m_dumpAssetUsage = FALSE;
-	m_framesPerSecondLimit = 0;
+	m_framesPerSecondLimit = 60;
 	m_chipSetType = 0;
 	m_headless = FALSE;
 	m_checkForUpdates = TRUE;
@@ -981,6 +982,8 @@ GlobalData::GlobalData()
 	m_showMoneyPerMinute = FALSE;
 	m_allowMoneyPerMinuteForPlayer = FALSE;
 
+	m_gameWindowTransitionSpeedMultiplier = 1.0f;
+
 	m_debugShowGraphicalFramerate = FALSE;
 
 	// By default, show all asserts.
@@ -1073,7 +1076,11 @@ GlobalData::GlobalData()
 	//-allAdvice feature
 	//m_allAdvice = FALSE;
 
+	m_useAlternateMouse = FALSE;
+	// GeneralsX @bugfix Meeseeks 18/06/2026 Default to TRUE to allow right-click drag scrolling under alternate controls by default
+	m_useRightMouseScrollWithAlternateMouse = TRUE;
 	m_clientRetaliationModeEnabled = TRUE; //On by default.
+	m_doubleClickAttackMove = FALSE;
 
 }
 
@@ -1214,6 +1221,7 @@ void GlobalData::parseGameDataDefinition( INI* ini )
 	// override INI values with user preferences
 	OptionPreferences optionPref;
 	TheWritableGlobalData->m_useAlternateMouse = optionPref.getAlternateMouseModeEnabled();
+	TheWritableGlobalData->m_useRightMouseScrollWithAlternateMouse = optionPref.getRightMouseScrollWithAlternateMouseEnabled();
 	TheWritableGlobalData->m_clientRetaliationModeEnabled = optionPref.getRetaliationModeEnabled();
 	TheWritableGlobalData->m_doubleClickAttackMove = optionPref.getDoubleClickAttackMoveEnabled();
 	TheWritableGlobalData->m_keyboardScrollFactor = optionPref.getScrollFactor();
@@ -1235,6 +1243,7 @@ void GlobalData::parseGameDataDefinition( INI* ini )
 	TheWritableGlobalData->m_gameTimeFontSize = optionPref.getGameTimeFontSize();
 	TheWritableGlobalData->m_playerInfoListFontSize = optionPref.getPlayerInfoListFontSize();
 	TheWritableGlobalData->m_showMoneyPerMinute = optionPref.getShowMoneyPerMinute();
+	TheWritableGlobalData->m_gameWindowTransitionSpeedMultiplier = optionPref.getGameWindowTransitionSpeedMultiplier();
 
 	TheWritableGlobalData->m_antiAliasLevel = optionPref.getAntiAliasing();
 	TheWritableGlobalData->m_textureFilteringMode = optionPref.getTextureFilterMode();

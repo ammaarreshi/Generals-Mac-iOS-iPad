@@ -214,7 +214,7 @@ void InitPrecisionTimer()
 /*static*/ Bool AutoPerfGatherIgnore::s_ignoring = false;
 
 //-------------------------------------------------------------------------------------------------
-typedef std::vector< std::pair< AsciiString, AsciiString > > StringPairVec;
+typedef std::vector< std::pair< AsciiString, AsciiString >/**/> StringPairVec;
 
 //-------------------------------------------------------------------------------------------------
 // PerfMetrics class. Basically, request a handle with your name and it will return. We use a vector

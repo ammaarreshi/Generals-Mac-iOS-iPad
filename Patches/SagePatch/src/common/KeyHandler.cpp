@@ -10,7 +10,13 @@ bool handleKeyDown(const SDL_KeyboardEvent& ev) {
     SDL_Window* window = SDL_GetWindowFromID(ev.windowID);
     if (!window) return false;
 
-    const bool ctrl = (ev.mod & SDL_KMOD_CTRL) != 0;
+    // GeneralsX @bugfix MrMeeseeks 16/06/2026 Use command on macOS, control on Linux, and require Alt to avoid conflict with gameplay group binding
+#ifdef __APPLE__
+    const bool modifier = (ev.mod & SDL_KMOD_GUI) != 0;
+#else
+    const bool modifier = (ev.mod & SDL_KMOD_CTRL) != 0;
+#endif
+    const bool alt = (ev.mod & SDL_KMOD_ALT) != 0;
 
     switch (ev.key) {
         case SDLK_F11:
@@ -22,26 +28,26 @@ bool handleKeyDown(const SDL_KeyboardEvent& ev) {
             return true;
 
         case SDLK_PAGEUP:
-            if (ctrl) { adjustBrightness(+8); return true; }
+            if (modifier) { adjustBrightness(+8); return true; }
             break;
         case SDLK_PAGEDOWN:
-            if (ctrl) { adjustBrightness(-8); return true; }
+            if (modifier) { adjustBrightness(-8); return true; }
             break;
 
         case SDLK_1:
-            if (ctrl) { moveWindow(window, WindowPosition::Center); return true; }
+            if (modifier && alt) { moveWindow(window, WindowPosition::Center); return true; }
             break;
         case SDLK_2:
-            if (ctrl) { moveWindow(window, WindowPosition::TopLeft); return true; }
+            if (modifier && alt) { moveWindow(window, WindowPosition::TopLeft); return true; }
             break;
         case SDLK_3:
-            if (ctrl) { moveWindow(window, WindowPosition::TopRight); return true; }
+            if (modifier && alt) { moveWindow(window, WindowPosition::TopRight); return true; }
             break;
         case SDLK_4:
-            if (ctrl) { moveWindow(window, WindowPosition::BottomLeft); return true; }
+            if (modifier && alt) { moveWindow(window, WindowPosition::BottomLeft); return true; }
             break;
         case SDLK_5:
-            if (ctrl) { moveWindow(window, WindowPosition::BottomRight); return true; }
+            if (modifier && alt) { moveWindow(window, WindowPosition::BottomRight); return true; }
             break;
 
         default:

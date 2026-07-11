@@ -175,10 +175,9 @@ if [[ -f "${SCRIPT_DIR}/libsage_patch.so" && "${SAGE_PATCH_DISABLED:-0}" != "1" 
     else
         export LD_PRELOAD="${SCRIPT_DIR}/libsage_patch.so"
     fi
-    export DXVK_HUD="${DXVK_HUD:-fps}"
-else
-    export DXVK_HUD="${DXVK_HUD:-0}"
 fi
+# DXVK HUD is disabled by default because Generals has a native FPS counter.
+export DXVK_HUD="${DXVK_HUD:-0}"
 
 # Auto-detect base Generals install path
 if [[ -z "${CNC_GENERALS_INSTALLPATH:-}" && -d "${SCRIPT_DIR}/../Generals" ]]; then

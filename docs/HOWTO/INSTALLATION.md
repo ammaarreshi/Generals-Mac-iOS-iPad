@@ -70,7 +70,7 @@
 
 GeneralsX has been developed and tested primarily on the following environments:
 
-- Ubuntu 24.04 LTS (x86_64)
+- Ubuntu 26.04 LTS (x86_64)
 - macOS 26 "Tahoe" on Apple Silicon (M1 / ARM64)
 
 Other Linux distributions or macOS versions may work, but you may need to install additional dependencies manually. On some systems, certain libraries might need to be built from source.
@@ -81,7 +81,7 @@ Current development and test matrix:
 
 | Platform           | Architecture           | Status  |
 |--------------------|------------------------|---------|
-| Ubuntu 24.04 LTS   | x86_64                 | Working |
+| Ubuntu 26.04 LTS   | x86_64                 | Working |
 | macOS 26 "Tahoe"   | ARM64 (Apple Silicon)  | Working |
 
 Support for other platforms and configurations is possible but not yet officially tested.

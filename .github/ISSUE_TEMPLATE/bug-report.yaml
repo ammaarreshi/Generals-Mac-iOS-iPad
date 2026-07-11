@@ -32,8 +32,6 @@ body:
         required: false
       - label: "Linux"
         required: false
-      - label: "Windows"
-        required: false
       - label: "Other (please specify below)"
         required: false
 

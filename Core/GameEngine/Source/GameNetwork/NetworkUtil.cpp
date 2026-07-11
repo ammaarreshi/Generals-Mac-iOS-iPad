@@ -110,10 +110,16 @@ UnsignedInt ResolveIP(AsciiString host)
 /**
  * Returns the next network command ID.
  */
-UnsignedShort GenerateNextCommandID() {
+UnsignedShort GenerateNextCommandID()
+{
+#if RETAIL_COMPATIBLE_NETWORKING
+	// GeneralsX @bugfix Codex 10/07/2026 Preserve the retail command-ID seed and pre-increment ordering for network compatibility.
 	static UnsignedShort commandID = 64000;
-	++commandID;
-	return commandID;
+	return ++commandID;
+#else
+	static UnsignedShort commandID = 0;
+	return commandID++;
+#endif
 }
 
 /**

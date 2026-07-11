@@ -201,6 +201,7 @@ void LANDisplayGameList( GameWindow *gameListbox, LANGameInfo *gameList )
 	LANGameInfo *selectedPtr = nullptr;
 	Int selectedIndex = -1;
 	Int indexToSelect = -1;
+	Int gameCount = 0;
 	if (gameListbox)
 	{
 		GadgetListBoxGetSelected(gameListbox, &selectedIndex);
@@ -226,6 +227,7 @@ void LANDisplayGameList( GameWindow *gameListbox, LANGameInfo *gameList )
 			}
 			Int addedIndex = GadgetListBoxAddEntryText(gameListbox, txtGName, (gameList->isGameInProgress())?gameInProgressColor:gameColor, -1, -1);
 			GadgetListBoxSetItemData(gameListbox, (void *)gameList, addedIndex, 0 );
+			++gameCount;
 
 			if (selectedPtr == gameList)
 				indexToSelect = addedIndex;
@@ -237,6 +239,7 @@ void LANDisplayGameList( GameWindow *gameListbox, LANGameInfo *gameList )
 			GadgetListBoxSetSelected(gameListbox, indexToSelect);
 		else
 			HideGameInfoWindow(TRUE);
+
 	}
 }
 
@@ -315,4 +318,3 @@ Bool ParseGameOptionsString(LANGameInfo *game, AsciiString options)
 
 	return false;
 }
-

@@ -304,8 +304,8 @@ void LaserUpdate::initLaser( const Object *parent, const Coord3D *startPos, cons
 	//Important! Set the laser position to the average of both points or else
 	//it probably won't get rendered!!!
 	Coord3D avgPos;
-	avgPos.set( startPos );
-	avgPos.add( endPos );
+	avgPos.set( *startPos );
+	avgPos.add( *endPos );
 	avgPos.scale( 0.5 );
 	getDrawable()->setPosition( &avgPos );
 	Object *laser = getDrawable()->getObject();

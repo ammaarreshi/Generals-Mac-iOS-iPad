@@ -205,7 +205,7 @@ void SalvageCrateCollide::doMoney( Object *other )
 		UnicodeString moneyString;
 		moneyString.format( TheGameText->fetch( "GUI:AddCash" ), money );
 		Coord3D pos;
-		pos.set( getObject()->getPosition() );
+		pos.set( *getObject()->getPosition() );
 		pos.z += 10.0f; //add a little z to make it show up above the unit.
 		Color color = other->getControllingPlayer()->getPlayerColor() | GameMakeColor( 0, 0, 0, 230 );
 		TheInGameUI->addFloatingText( moneyString, &pos, color );

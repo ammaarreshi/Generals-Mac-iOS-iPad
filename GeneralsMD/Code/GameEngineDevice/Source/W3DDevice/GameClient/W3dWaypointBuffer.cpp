@@ -253,7 +253,7 @@ void W3DWaypointBuffer::drawWaypoints(RenderInfoClass &rinfo)
               {
 
                 Coord3D delta = *obj->getPosition();
-                delta.sub( enemy->getPosition() );
+                delta.sub( *enemy->getPosition() );
                 if ( delta.length() <= obj->getVisionRange() ) // is listening outpost close enough to do this?
                 {
 
@@ -381,12 +381,12 @@ void W3DWaypointBuffer::drawWaypoints(RenderInfoClass &rinfo)
 							wayOutPoint.normalize();
 							wayOutPoint.scale( 99999.9f );
 							Real wayOutLength = wayOutPoint.length();
-							wayOutPoint.add(&naturalRallyPoint);
+							wayOutPoint.add(naturalRallyPoint);
 
 
 							//if the rallypoint is closer to the wayoutpoint than it is to the natural rally point then we definitely do not wrap
 							Coord3D rallyToWayOutDelta = wayOutPoint;
-							rallyToWayOutDelta.sub(rallyPoint);
+							rallyToWayOutDelta.sub(*rallyPoint);
 							if ( (100.0f + rallyToWayOutDelta.length()) > wayOutLength)
 							{
 
@@ -394,7 +394,7 @@ void W3DWaypointBuffer::drawWaypoints(RenderInfoClass &rinfo)
 								wayOutPoint.normalize();// a normal shooting straight out the door
 								//next comes the delta between the NRP and the RP
 								Coord3D NRPToRPDelta = naturalRallyPoint;
-								NRPToRPDelta.sub(rallyPoint);
+								NRPToRPDelta.sub(*rallyPoint);
 								NRPToRPDelta.normalize();
 								Real dot = NRPToRPDelta.x * wayOutPoint.x + NRPToRPDelta.y * wayOutPoint.y;
 								if (dot > 0)

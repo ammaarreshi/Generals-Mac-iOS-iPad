@@ -692,17 +692,18 @@ void W3DProjectedShadowManager::flushDecals(W3DShadowTexture *texture, ShadowTyp
 	DX8Wrapper::Set_Texture(0,texture->getTexture());
 
 //	DX8Wrapper::Set_Shader(ShaderClass::_PresetOpaqueShader);	//good for debugging, draws without alpha
-	switch (type)
+	// GeneralsX @bugfix Meeseeks 17/06/2026 Support combined decal flags by replacing strict switch with bitwise checks.
+	if (type & SHADOW_ALPHA_DECAL)
 	{
-		case SHADOW_DECAL:
-			DX8Wrapper::Set_Shader(ShaderClass::_PresetMultiplicativeShader);
-			break;
-		case SHADOW_ALPHA_DECAL:
-			DX8Wrapper::Set_Shader(ShaderClass::_PresetAlphaShader);
-			break;
-		case SHADOW_ADDITIVE_DECAL:
-			DX8Wrapper::Set_Shader(ShaderClass::_PresetAdditiveShader);
-			break;
+		DX8Wrapper::Set_Shader(ShaderClass::_PresetAlphaShader);
+	}
+	else if (type & SHADOW_ADDITIVE_DECAL)
+	{
+		DX8Wrapper::Set_Shader(ShaderClass::_PresetAdditiveShader);
+	}
+	else if (type & SHADOW_DECAL)
+	{
+		DX8Wrapper::Set_Shader(ShaderClass::_PresetMultiplicativeShader);
 	}
 
 //	DX8Wrapper::Set_DX8_Render_State(D3DRS_ALPHAREF,0x60);
@@ -1333,9 +1334,9 @@ Int W3DProjectedShadowManager::renderShadows(RenderInfoClass & rinfo)
 				if (shadow->m_type & SHADOW_DECAL)
 				{
 					if (lastShadowDecalTexture == nullptr)
-						lastShadowDecalTexture=m_shadowList->m_shadowTexture[0];
+						lastShadowDecalTexture=shadow->m_shadowTexture[0];
 					if (lastShadowType == SHADOW_NONE)
-						lastShadowType = m_shadowList->m_type;
+						lastShadowType = shadow->m_type;
 
 					if (shadow->m_shadowTexture[0] != lastShadowDecalTexture ||
 						shadow->m_type != lastShadowType)
@@ -1376,7 +1377,8 @@ Int W3DProjectedShadowManager::renderShadows(RenderInfoClass & rinfo)
 						aaBox.Translate(shadow->m_robj->Get_Position());	//translate bounding box to world space.
 				}
 
-				if (shadow->m_type == SHADOW_PROJECTION)
+				// GeneralsX @bugfix Meeseeks 17/06/2026 Support combined projection flags by checking bits.
+				if (shadow->m_type & SHADOW_PROJECTION)
 				{
 					//build inverse camera/view transforms needed for projection
 					shadow->updateProjectionParameters(rinfo.Camera.Get_Transform());
@@ -1445,9 +1447,9 @@ Int W3DProjectedShadowManager::renderShadows(RenderInfoClass & rinfo)
 			if (shadow->m_isEnabled && !shadow->m_isInvisibleEnabled)
 			{
 				if (lastShadowDecalTexture == nullptr)
-					lastShadowDecalTexture=m_decalList->m_shadowTexture[0];
+					lastShadowDecalTexture=shadow->m_shadowTexture[0];
 				if (lastShadowType == SHADOW_NONE)
-					lastShadowType = m_decalList->m_type;
+					lastShadowType = shadow->m_type;
 
 				if (shadow->m_shadowTexture[0] != lastShadowDecalTexture ||
 					shadow->m_type != lastShadowType)
@@ -1720,8 +1722,8 @@ W3DProjectedShadow* W3DProjectedShadowManager::addShadow(RenderObjClass *robj, S
 	if (shadowInfo)
 	{
 		//determine what kind of shadow is needed
-		// GeneralsX @bugfix Copilot 11/05/2026 Accept combined decal flags via bitmask checks.
-		if (shadowInfo->m_type & SHADOW_DECAL)
+		// GeneralsX @bugfix Mr. Meeseeks 17/06/2026 Accept combined decal/alpha/additive flags via bitmask checks.
+		if (shadowInfo->m_type & (SHADOW_DECAL | SHADOW_ALPHA_DECAL | SHADOW_ADDITIVE_DECAL))
 		{		//simple decal using the premade texture specified.
 				//can be always perpendicular to model's z-axis or projected
 				//onto world geometry.
@@ -1756,7 +1758,7 @@ W3DProjectedShadow* W3DProjectedShadowManager::addShadow(RenderObjClass *robj, S
 					m_W3DShadowTextureManager->addTexture( st );
 					st->setTexture(w3dTexture);
 				}
-				shadowType=SHADOW_DECAL;
+				shadowType=(ShadowType)(shadowInfo->m_type | SHADOW_DECAL);
 				allowSunDirection=shadowInfo->m_type & SHADOW_DIRECTIONAL_PROJECTION;
 				decalSizeX=shadowInfo->m_sizeX;
 				decalSizeY=shadowInfo->m_sizeY;
@@ -1791,7 +1793,7 @@ W3DProjectedShadow* W3DProjectedShadowManager::addShadow(RenderObjClass *robj, S
 					if (st==nullptr)
 						return nullptr;	//could not create the shadow texture
 				}
-				shadowType=SHADOW_PROJECTION;
+				shadowType=(ShadowType)(shadowInfo->m_type | SHADOW_PROJECTION);
 		}
 	}
 	else
@@ -1857,6 +1859,11 @@ W3DProjectedShadow* W3DProjectedShadowManager::addShadow(RenderObjClass *robj, S
 	shadow->m_decalOffsetV= decalOffsetY;
 
 	shadow->m_flags	= allowSunDirection;
+	if ((shadowType & SHADOW_DYNAMIC_PROJECTION) || (shadowInfo && shadowInfo->allowUpdates))
+	{
+		// GeneralsX @bugfix Copilot 11/05/2026 Keep projected shadow texture in sync for animated casters without root translation.
+		shadow->m_flags |= SHADOW_DYNAMIC_PROJECTION;
+	}
 
 	shadow->init();
 
@@ -2058,18 +2065,14 @@ void W3DProjectedShadowManager::removeAllShadows()
 
 void W3DProjectedShadowManager::updateShadowNumbers(ShadowType shadowType, Int addNum)
 {
-	switch (shadowType)
+	// GeneralsX @bugfix Meeseeks 17/06/2026 Support combined shadow flags by checking bits.
+	if (shadowType & (SHADOW_DECAL | SHADOW_ALPHA_DECAL | SHADOW_ADDITIVE_DECAL))
 	{
-		case SHADOW_DECAL:
-		case SHADOW_ALPHA_DECAL:
-		case SHADOW_ADDITIVE_DECAL:
-			m_numDecalShadows += addNum;
-			break;
-		case SHADOW_PROJECTION:
-			m_numProjectionShadows += addNum;
-			break;
-		default:
-			break;
+		m_numDecalShadows += addNum;
+	}
+	else if (shadowType & SHADOW_PROJECTION)
+	{
+		m_numProjectionShadows += addNum;
 	}
 }
 
@@ -2106,8 +2109,9 @@ void W3DProjectedShadow::init()
 
 	DEBUG_ASSERTCRASH(m_shadowProjector == nullptr, ("Init of existing shadow projector"));
 
-	if (m_type == SHADOW_PROJECTION)
+	if (m_type & SHADOW_PROJECTION)
 	{
+		float	minx,maxx;
 		m_shadowProjector = NEW_REF(TexProjectClass,());
 		m_shadowProjector->Set_Intensity(0.4f,true);
 		m_shadowProjector->Set_Texture(m_shadowTexture[0]->getTexture());
@@ -2126,7 +2130,8 @@ void W3DProjectedShadow::updateTexture(Vector3 &lightPos)
 	//light is too far.
 	///@todo: See why infinite light sources don't project shadows correctly.
 
-	if (m_type == SHADOW_PROJECTION)
+	// GeneralsX @bugfix Meeseeks 17/06/2026 Support combined projection flags by checking bits.
+	if (m_type & SHADOW_PROJECTION)
 	{	//projected shadows use custom runtime generated textures based on object geometry
 		Vector3 objPos=m_robj->Get_Position();
 		if (objPos == Vector3(0,0,0))
@@ -2157,7 +2162,7 @@ void W3DProjectedShadow::updateTexture(Vector3 &lightPos)
 		m_shadowTexture[0]->updateBounds(TheW3DShadowManager->getLightPosWorld(0),m_robj);	//update local shadow bounds
 	}
 	else
-	if (m_type == SHADOW_DECAL)
+	if (m_type & SHADOW_DECAL)
 	{	//decal shadows use artist supplied textures.  We just need to tweak the uv coordinates to match
 		//the light direction.
 		Vector3 objPos=m_robj->Get_Position();

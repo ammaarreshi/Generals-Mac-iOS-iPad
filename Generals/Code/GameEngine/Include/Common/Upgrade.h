@@ -40,6 +40,7 @@ class Player;
 class UpgradeTemplate;
 enum NameKeyType CPP_11(: Int);
 class Image;
+enum AcademyClassificationType CPP_11(: Int);
 
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------
@@ -51,7 +52,7 @@ enum UpgradeStatusType CPP_11(: Int)
 };
 
 //The maximum number of upgrades.
-// TheSuperHackers @tweak Stubbjax 22/01/2026 Increases max upgrade count from 64 to allow for more upgrades.
+// TheSuperHackers @tweak Stubbjax 22/01/2026 Increases max upgrade count from Generals:64, Zero Hour:128 to allow for more upgrades.
 // A value of 512 was chosen to allow room for plenty of upgrades while also conserving memory.
 #define UPGRADE_MAX_COUNT 512
 
@@ -178,6 +179,7 @@ public:
 	UpgradeType getUpgradeType() const { return m_type; }
 	const AudioEventRTS* getResearchCompleteSound() const { return &m_researchSound; }
 	const AudioEventRTS* getUnitSpecificSound() const { return &m_unitSpecificSound; }
+	AcademyClassificationType getAcademyClassificationType() const { return m_academyClassificationType; }
 
 	/// inventory pictures
 	void cacheButtonImage();
@@ -207,6 +209,7 @@ protected:
 	UpgradeMaskType m_upgradeMask;			///< Unique bitmask for this upgrade template
 	AudioEventRTS	m_researchSound;			///< Sound played when upgrade researched.
 	AudioEventRTS	m_unitSpecificSound;	///< Secondary sound played when upgrade researched.
+	AcademyClassificationType m_academyClassificationType; ///< A value used by the academy to evaluate advice based on what players do.
 
 	UpgradeTemplate *m_next;						///< next
 	UpgradeTemplate *m_prev;						///< prev

@@ -309,19 +309,26 @@ public:
 
 		for (int chunk = numChunks - 1; chunk >= 0; --chunk)
 		{
-			unsigned long long val = 0;
+			UnsignedInt64 val = 0;
 			for (int bit = 0; bit < 64 && (chunk * 64 + bit) < NUMBITS; ++bit)
 			{
 				if (m_bits.test(chunk * 64 + bit))
-					val |= (unsigned long long)(1) << bit;
+					val |= (UnsignedInt64)(1) << bit;
 			}
 
 			if (val != 0 || chunk == 0 || printedAny)
 			{
+#ifdef _MSC_VER
 				if (printedAny)
-					snprintf(chunkBuf, sizeof(chunkBuf), "%016llX", val);
+					snprintf(chunkBuf, sizeof(chunkBuf), "%016I64X", val);
 				else
-					snprintf(chunkBuf, sizeof(chunkBuf), "%llX", val);
+					snprintf(chunkBuf, sizeof(chunkBuf), "%I64X", val);
+#else
+				if (printedAny)
+					snprintf(chunkBuf, sizeof(chunkBuf), "%016llX", (unsigned long long)val);
+				else
+					snprintf(chunkBuf, sizeof(chunkBuf), "%llX", (unsigned long long)val);
+#endif
 
 				result.concat(chunkBuf);
 				printedAny = true;

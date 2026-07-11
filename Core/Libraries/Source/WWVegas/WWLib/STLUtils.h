@@ -124,21 +124,21 @@ Iter advance_in_range(Iter first, Iter last, ptrdiff_t n)
 }
 
 template <typename Key, typename Val>
-range<std::multimap<Key, Val> > get_range(std::multimap<Key, Val>& mm, const Key& key, ptrdiff_t n = 0)
+range<std::multimap<Key, Val>/**/> get_range(std::multimap<Key, Val>& mm, const Key& key, ptrdiff_t n = 0)
 {
 	typedef typename std::multimap<Key, Val>::iterator Iter;
 	const std::pair<Iter, Iter> pair = mm.equal_range(key);
 	const Iter it = advance_in_range(pair.first, pair.second, n);
-	return range<std::multimap<Key, Val> >(it, pair.second);
+	return range<std::multimap<Key, Val>/**/>(it, pair.second);
 }
 
 template <typename Key, typename Val>
-const_range<std::multimap<Key, Val> > get_range(const std::multimap<Key, Val>& mm, const Key& key, ptrdiff_t n = 0)
+const_range<std::multimap<Key, Val>/**/> get_range(const std::multimap<Key, Val>& mm, const Key& key, ptrdiff_t n = 0)
 {
 	typedef typename std::multimap<Key, Val>::const_iterator Iter;
 	const std::pair<Iter, Iter> pair = mm.equal_range(key);
 	const Iter it = advance_in_range(pair.first, pair.second, n);
-	return const_range<std::multimap<Key, Val> >(it, pair.second);
+	return const_range<std::multimap<Key, Val>/**/>(it, pair.second);
 }
 
 } // namespace stl

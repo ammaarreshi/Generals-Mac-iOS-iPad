@@ -831,7 +831,7 @@ void ParkingPlaceBehavior::unreserveDoorForExit( ExitDoorType exitDoor )
 void ParkingPlaceBehavior::setRallyPoint( const Coord3D *pos )
 {
 	m_heliRallyPointExists = TRUE;
-	m_heliRallyPoint.set( pos );
+	m_heliRallyPoint.set( *pos );
 	// nothing
 }
 

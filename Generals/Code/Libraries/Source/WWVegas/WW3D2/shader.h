@@ -130,6 +130,10 @@ public:
 		DETAILCOLOR_SUBR,				// 0110	other - local
 		DETAILCOLOR_BLEND,			// 0111	(localAlpha)*local + (~localAlpha)*other
 		DETAILCOLOR_DETAILBLEND,	//	1000	(otherAlpha)*local + (~otherAlpha)*other
+		DETAILCOLOR_ADDSIGNED,		// 1001	(local + other - 0.5)
+		DETAILCOLOR_ADDSIGNED2X,	// 1010	(local + other - 0.5) * 2
+		DETAILCOLOR_SCALE2X,			// 1011	local * other * 2
+		DETAILCOLOR_MODALPHAADDCOLOR,	// 1100 local + localAlpha * other
 	};
 
 	enum CullModeType
@@ -201,6 +205,7 @@ public:
 		SSCAT_OPAQUE=0,
 		SSCAT_ALPHA_TEST,
 		SSCAT_ADDITIVE,
+		SSCAT_SCREEN,
 		SSCAT_OTHER
 	};
 

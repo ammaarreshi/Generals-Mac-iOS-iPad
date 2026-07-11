@@ -527,6 +527,36 @@ void OpenContain::iterateContained( ContainIterateFunc func, void *userData, Boo
 }
 
 //-------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+Object* OpenContain::getClosestRider( const Coord3D *pos )
+{
+	Object *closest = nullptr;
+	Real closestDistance;
+
+	for(ContainedItemsList::const_iterator it = m_containList.begin(); it != m_containList.end(); ++it)
+	{
+    Object *rider = *it;
+
+    if (rider)
+    {
+      Real distance = ThePartitionManager->getDistanceSquared( rider, pos, FROM_CENTER_2D );
+	    if( !closest || closestDistance > distance )
+	    {
+		    closest = rider;
+		    closestDistance = distance;
+	    }
+    }
+
+  }
+
+   return closest; //Could be null!
+}
+
+
+
+
+
+//-------------------------------------------------------------------------------------------------
 struct DropData
 {
 	Real minRadius;

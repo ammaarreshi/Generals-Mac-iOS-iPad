@@ -110,7 +110,7 @@ set(GAMEENGINEDEVICE_SRC
 #    Source/W3DDevice/GameClient/GUI/Gadget/W3DTabControl.cpp
 #    Source/W3DDevice/GameClient/GUI/Gadget/W3DTextEntry.cpp
 #    Source/W3DDevice/GameClient/GUI/Gadget/W3DVerticalSlider.cpp
-    Source/W3DDevice/GameClient/GUI/GUICallbacks/W3DControlBar.cpp
+#    Source/W3DDevice/GameClient/GUI/GUICallbacks/W3DControlBar.cpp
     Source/W3DDevice/GameClient/GUI/GUICallbacks/W3DMainMenu.cpp
     Source/W3DDevice/GameClient/GUI/GUICallbacks/W3DMOTD.cpp
     Source/W3DDevice/GameClient/GUI/W3DGameFont.cpp
@@ -241,6 +241,14 @@ if(SAGE_USE_OPENAL)
     include(${CMAKE_SOURCE_DIR}/cmake/openal.cmake)
     find_package(OpenAL REQUIRED)
     target_link_libraries(g_gameenginedevice PUBLIC OpenAL::OpenAL)
+endif()
+
+# GeneralsX @feature fbraz 11/06/2026 MiniAudio audio backend (alternative to OpenAL)
+if(SAGE_USE_MINIAUDIO)
+    if(NOT TARGET miniaudio_lib)
+        message(FATAL_ERROR "SAGE_USE_MINIAUDIO is ON but miniaudio_lib target not found. Include cmake/miniaudio.cmake first.")
+    endif()
+    target_link_libraries(g_gameenginedevice PUBLIC miniaudio_lib)
 endif()
 
 # GeneralsX @feature BenderAI 10/03/2026 - FFmpeg audio/video decoding

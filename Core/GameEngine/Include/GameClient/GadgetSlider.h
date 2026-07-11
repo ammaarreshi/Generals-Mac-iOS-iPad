@@ -78,6 +78,16 @@ inline void GadgetSliderGetMinMax( GameWindow *g, Int *min, Int *max )
 	*min = sData->minVal;
 
 }
+
+// GeneralsX @tweak felipebraz 20/06/2026 Add GadgetSliderSetMinMax to allow dynamically setting slider min/max bounds
+inline void GadgetSliderSetMinMax( GameWindow *win, Int min, Int max )
+{
+	TheWindowManager->winSendSystemMsg( win,
+																			GSM_SET_MIN_MAX,
+																			min,
+																			max );
+}
+
 inline GameWindow *GadgetSliderGetThumb( GameWindow *g ) { return g->winGetChild(); }
 
 inline void GadgetSliderSetPosition( GameWindow *win, Int pos )

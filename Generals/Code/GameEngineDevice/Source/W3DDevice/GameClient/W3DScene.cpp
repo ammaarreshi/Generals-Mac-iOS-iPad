@@ -855,7 +855,7 @@ void RTS3DScene::updateFixedLightEnvironments(RenderInfoClass & rinfo)
 {
 	//Figure out how dimly lit fogged objects should be compared to fully lit.
 	Real foggedLightFrac = (Real)TheGlobalData->m_fogAlpha/(Real)TheGlobalData->m_clearAlpha;
-	Vector3 oldDiffuse;
+	Vector3 oldDiffuse, oldAmbient;
 	Real infantryLightScale;
 	if( TheGlobalData->m_scriptOverrideInfantryLightScale != -1.0f )
 		infantryLightScale = TheGlobalData->m_scriptOverrideInfantryLightScale;
@@ -871,11 +871,18 @@ void RTS3DScene::updateFixedLightEnvironments(RenderInfoClass & rinfo)
 		m_defaultLightEnv.Add_Light(*m_globalLight[globalLightIndex]);
 		//copy default lighting for infantry so we can tweak it.
 		*m_infantryLight[globalLightIndex]=*m_globalLight[globalLightIndex];
-		m_globalLight[globalLightIndex]->Get_Diffuse(&oldDiffuse);
-		m_infantryLight[globalLightIndex]->Set_Diffuse(oldDiffuse*infantryLightScale);
-		m_globalLight[globalLightIndex]->Get_Ambient(&oldDiffuse);
-		m_infantryLight[globalLightIndex]->Set_Ambient(oldDiffuse*infantryLightScale);
 		m_infantryLight[globalLightIndex]->Set_Transform(m_globalLight[globalLightIndex]->Get_Transform());
+
+		m_globalLight[globalLightIndex]->Get_Diffuse(&oldDiffuse);
+		m_globalLight[globalLightIndex]->Get_Ambient(&oldAmbient);
+		oldDiffuse *= infantryLightScale;
+		oldAmbient *= infantryLightScale;
+		// GeneralsX @bugfix Mr. Meeseeks 17/06/2026 Clamp infantry lighting to 1.0f to avoid shader overflows under Vulkan/DXVK
+		static Vector3 id (1.0f, 1.0f, 1.0f);
+		oldDiffuse.Cap_Absolute_To(id);
+		oldAmbient.Cap_Absolute_To(id);
+		m_infantryLight[globalLightIndex]->Set_Ambient(oldAmbient);
+		m_infantryLight[globalLightIndex]->Set_Diffuse(oldDiffuse);
 
 		//copy the normal light for fog so we can modify it
 		m_scratchLight->Set_Transform(m_globalLight[globalLightIndex]->Get_Transform());

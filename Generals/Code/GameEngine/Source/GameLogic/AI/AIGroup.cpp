@@ -690,7 +690,7 @@ static void clampToMap(Coord3D *dest, PlayerType pt)
 	extent.hi.y -= PATHFIND_CELL_SIZE_F;
 	extent.lo.x += PATHFIND_CELL_SIZE_F;
 	extent.lo.y += PATHFIND_CELL_SIZE_F;
-	if (!extent.isInRegionNoZ(dest)) {
+	if (!extent.isInRegionNoZ(*dest)) {
 		// clamp to in region. [8/28/2003]
 		if (dest->x < extent.lo.x) {
 			dest->x = extent.lo.x;
@@ -1558,7 +1558,7 @@ void clampWaypointPosition( Coord3D &position, Int margin )
   mapExtent.lo.x += margin;
   mapExtent.lo.y += margin;
 
-	if ( mapExtent.isInRegionNoZ( &position ) == FALSE )
+	if ( mapExtent.isInRegionNoZ( position ) == FALSE )
   {
     if ( position.x > mapExtent.hi.x )
       position.x = mapExtent.hi.x;
@@ -1839,8 +1839,8 @@ void getHelicopterOffset( Coord3D& posOut, Int idx )
   }
 
   Coord3D tempCtr = posOut;
-  posOut.x = tempCtr.x + (sin(angle) * radius);
-  posOut.y = tempCtr.y + (cos(angle) * radius);
+  posOut.x = tempCtr.x + (WWMath::SinTrig(angle) * radius);
+  posOut.y = tempCtr.y + (WWMath::CosTrig(angle) * radius);
 
 }
 
@@ -2213,7 +2213,7 @@ void AIGroup::groupAttackPosition( const Coord3D *pos, Int maxShotsToFire, Comma
 		if( !pos )
 		{
 			//If you specify a nullptr position, it means you are attacking your own location.
-			attackPos.set( (*i)->getPosition() );
+			attackPos.set( *(*i)->getPosition() );
 		}
 
 		//This code allows garrisoned buildings to force attack a ground position

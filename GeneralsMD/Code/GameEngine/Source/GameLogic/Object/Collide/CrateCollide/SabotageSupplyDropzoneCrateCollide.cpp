@@ -171,13 +171,13 @@ Bool SabotageSupplyDropzoneCrateCollide::executeCrateBehavior( Object *other )
 			UnicodeString moneyString;
 			moneyString.format( TheGameText->fetch( "GUI:AddCash" ), cash );
 			Coord3D pos;
-			pos.set( obj->getPosition() );
+			pos.set( *obj->getPosition() );
 			pos.z += 20.0f; //add a little z to make it show up above the unit.
 			TheInGameUI->addFloatingText( moneyString, &pos, GameMakeColor( 0, 255, 0, 255 ) );
 
 			//Display cash lost floating over the target
 			moneyString.format( TheGameText->fetch( "GUI:LoseCash" ), cash );
-			pos.set( other->getPosition() );
+			pos.set( *other->getPosition() );
 			pos.z += 30.0f; //add a little z to make it show up above the unit.
 			TheInGameUI->addFloatingText( moneyString, &pos, GameMakeColor( 255, 0, 0, 255 ) );
 		}

@@ -1658,10 +1658,10 @@ Bool AIUpdateInterface::computePath( PathfindServicesInterface *pathServices, Co
 	m_retryPath = false;
 	Region3D extent;
 	TheTerrainLogic->getMaximumPathfindExtent(&extent);
-	if (!extent.isInRegionNoZ(destination)) {
+	if (!extent.isInRegionNoZ(*destination)) {
 		// We're going off the map.
 		Coord3D pos = *getObject()->getPosition();
-		if (!extent.isInRegionNoZ(&pos))	{
+		if (!extent.isInRegionNoZ(pos))	{
 			// We're starting off the map.  Since we're off the map, we can't pathfind so just build a path.
 			return computeQuickPath(destination);
 		}
@@ -2230,7 +2230,7 @@ UpdateSleepTime AIUpdateInterface::doLocomotor()
 							}
 							else
 							{
-								Real dist = sqrtf(dSqr);
+								Real dist = WWMath::SqrtfOrigin(dSqr);
 								if (dist<1) dist = 1;
 								pos.x += 2*PATHFIND_CELL_SIZE_F*dx/(dist*LOGICFRAMES_PER_SECOND);
 								pos.y += 2*PATHFIND_CELL_SIZE_F*dy/(dist*LOGICFRAMES_PER_SECOND);
@@ -2424,7 +2424,7 @@ Real AIUpdateInterface::getLocomotorDistanceToGoal()
 					dest = m_path->getLastNode()->getPosition();
 				}
 				Real distance = ThePartitionManager->getDistanceSquared( me, dest, FROM_CENTER_3D );
-				return sqrt( distance );// Other paths return dots of normalized vectors, so one sqrt ain't so bad
+				return WWMath::SqrtOrigin( distance );// Other paths return dots of normalized vectors, so one sqrt ain't so bad
 			}
 			else
 			{
@@ -2456,7 +2456,7 @@ Real AIUpdateInterface::getLocomotorDistanceToGoal()
 				{
 					if (sqr(dist) > distSqr)
 					{
-						return sqrt(distSqr);
+						return WWMath::SqrtOrigin(distSqr);
 					}
 					else
 					{
@@ -2465,7 +2465,7 @@ Real AIUpdateInterface::getLocomotorDistanceToGoal()
 				}
 
 				if (dist<PATHFIND_CELL_SIZE_F || sqr(dist) < distSqr)
-					return sqrtf(distSqr);
+					return WWMath::SqrtfOrigin(distSqr);
 				else
 					return dist;
 
@@ -3841,7 +3841,7 @@ void AIUpdateInterface::privateGuardPosition( const Coord3D *pos, GuardMode guar
 		// Clip to playable area.
 		Region3D r;
 		TheTerrainLogic->getExtent(&r);
-		if (!r.isInRegionNoZ(&adjPos))
+		if (!r.isInRegionNoZ(adjPos))
 			adjPos = TheTerrainLogic->findClosestEdgePoint(&adjPos);
 	}
 	m_locationToGuard = adjPos;

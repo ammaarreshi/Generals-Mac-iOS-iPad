@@ -299,7 +299,7 @@ void SlowDeathBehavior::beginSlowDeath(const DamageInfo *damageInfo)
 				physics->setExtraBounciness(-1.0);					// we don't want this guy to bounce at all
 				physics->setExtraFriction(-3 * SECONDS_PER_LOGICFRAME_REAL);							// reduce his ground friction a bit
 				physics->setAllowBouncing(true);
-				Real orientation = atan2(force.y, force.x);
+				Real orientation = WWMath::Atan2Origin(force.y, force.x);
 				physics->setAngles(orientation, 0, 0);
 				obj->getDrawable()->setModelConditionState(MODELCONDITION_EXPLODED_FLAILING);
 				m_flags |= (1<<FLUNG_INTO_AIR);

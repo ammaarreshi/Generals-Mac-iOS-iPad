@@ -247,6 +247,8 @@ public:  // height map info.
 	Int getXExtent() {return m_width;}	///<number of vertices in x
 	Int getYExtent() {return m_height;}	///<number of vertices in y
 
+	Region2D getDrawRegion2D();
+
 	Int getDrawOrgX() {return m_drawOriginX;}
 	Int getDrawOrgY() {return m_drawOriginY;}
 

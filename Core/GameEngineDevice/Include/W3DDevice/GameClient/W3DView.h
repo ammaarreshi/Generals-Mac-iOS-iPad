@@ -219,8 +219,8 @@ public:
 	virtual void setFieldOfView( Real angle ) override;							///< Set the horizontal field of view angle
 
   virtual WorldToScreenReturn worldToScreenTriReturn( const Coord3D *w, ICoord2D *s ) override;	///< Transform world coordinate "w" into screen coordinate "s"
-	virtual void screenToTerrain( const ICoord2D *screen, Coord3D *world ) override;  ///< transform screen coord to a point on the 3D terrain
-	virtual void screenToWorldAtZ( const ICoord2D *s, Coord3D *w, Real z ) override;  ///< transform screen point to world point at the specified world Z value
+	virtual Bool screenToTerrain( const ICoord2D *screen, Coord3D *world ) override;
+	virtual PlaneClass::IntersectionResType screenToWorldAtZ( const ICoord2D *screen, Coord3D *world, Real z ) override;
 
 	CameraClass *get3DCamera() const { return m_3DCamera; }
 

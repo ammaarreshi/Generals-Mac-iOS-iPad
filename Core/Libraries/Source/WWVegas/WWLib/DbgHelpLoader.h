@@ -210,7 +210,7 @@ private:
 	MiniDumpWriteDump_t m_miniDumpWriteDump;
 #endif
 
-	typedef std::set<HANDLE, std::less<HANDLE>, stl::system_allocator<HANDLE> > Processes;
+	typedef std::set<HANDLE, std::less<HANDLE>, stl::system_allocator<HANDLE>/**/> Processes;
 
 	Processes m_initializedProcesses;
 	HMODULE m_dllModule;

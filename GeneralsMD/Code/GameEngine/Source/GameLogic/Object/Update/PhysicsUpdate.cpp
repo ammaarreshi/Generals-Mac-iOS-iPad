@@ -101,8 +101,8 @@ static Real angleBetweenVectors(const Coord3D& inCurDir, const Coord3D& inGoalDi
 static Real heightToSpeed(Real height)
 {
 	// don't bother trying to remember how far we've fallen; instead,
-	// back-calc it from our speed & gravity... v = sqrt(2*g*h)
-	return sqrt(fabs(2.0f * TheGlobalData->m_gravity * height));
+	// back-calc it from our speed & gravity... v = WWMath::SqrtOrigin(2*g*h)
+	return WWMath::SqrtOrigin(fabs(2.0f * TheGlobalData->m_gravity * height));
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -143,7 +143,7 @@ PhysicsBehaviorModuleData::PhysicsBehaviorModuleData()
 static void parseHeightToSpeed( INI* ini, void * /*instance*/, void *store, const void* /*userData*/ )
 {
 	// don't bother trying to remember how far we've fallen; instead,
-	// back-calc it from our speed & gravity... v = sqrt(2*g*h)
+	// back-calc it from our speed & gravity... v = WWMath::SqrtOrigin(2*g*h)
 	Real height = INI::scanReal(ini->getNextToken());
 	*(Real *)store = heightToSpeed(height);
 }
@@ -736,8 +736,8 @@ UpdateSleepTime PhysicsBehavior::update()
 			if (offset != 0.0f)
 			{
 				Vector3 xvec = mtx.Get_X_Vector();
-				Real xy = sqrtf(sqr(xvec.X) + sqr(xvec.Y));
-				Real pitchAngle = atan2(xvec.Z, xy);
+				Real xy = WWMath::SqrtfOrigin(sqr(xvec.X) + sqr(xvec.Y));
+				Real pitchAngle = WWMath::Atan2Origin(xvec.Z, xy);
 				Real remainingAngle = (offset > 0) ? ((PI/2) - pitchAngle) : (-(PI/2) + pitchAngle);
 				Real s = Sin(remainingAngle);
 				pitchRateToUse *= s;
@@ -849,7 +849,7 @@ UpdateSleepTime PhysicsBehavior::update()
 
 		//
 		// don't bother trying to remember how far we've fallen; instead,
-		// we back-calc it from our speed & gravity... v = sqrt(2*g*h).
+		// we back-calc it from our speed & gravity... v = WWMath::SqrtOrigin(2*g*h).
 		// (note that m_minFallSpeedForDamage is always POSITIVE.)
 		//
 		// also note: since projectiles are immune to falling damage, don't
@@ -943,7 +943,7 @@ Real PhysicsBehavior::getVelocityMagnitude() const
 {
 	if (m_velMag == INVALID_VEL_MAG)
 	{
-		m_velMag = (Real)sqrtf( sqr(m_vel.x) + sqr(m_vel.y) + sqr(m_vel.z) );
+		m_velMag = (Real)WWMath::SqrtfOrigin( sqr(m_vel.x) + sqr(m_vel.y) + sqr(m_vel.z) );
 	}
 	return m_velMag;
 }
@@ -963,9 +963,9 @@ Real PhysicsBehavior::getForwardSpeed2D() const
 	Real dot = vx + vy;
 
 	Real speedSquared = vx*vx + vy*vy;
-//	DEBUG_ASSERTCRASH( speedSquared != 0, ("zero speedSquared will overflow sqrtf()!") );// lorenzen... sanity check
+//	DEBUG_ASSERTCRASH( speedSquared != 0, ("zero speedSquared will overflow WWMath::SqrtfOrigin()!") );// lorenzen... sanity check
 
-	Real speed = (Real)sqrtf( speedSquared );
+	Real speed = (Real)WWMath::SqrtfOrigin( speedSquared );
 
 	if (dot >= 0.0f)
 		return speed;
@@ -988,7 +988,7 @@ Real PhysicsBehavior::getForwardSpeed3D() const
 
 	Real dot = vx + vy + vz;
 
-	Real speed = (Real)sqrtf( vx*vx + vy*vy + vz*vz );
+	Real speed = (Real)WWMath::SqrtfOrigin( vx*vx + vy*vy + vz*vz );
 
 	if (dot >= 0.0f)
 		return speed;
@@ -1035,7 +1035,7 @@ void PhysicsBehavior::scrubVelocity2D( Real desiredVelocity )
 	}
 	else
 	{
-		Real curVelocity = sqrtf(m_vel.x*m_vel.x + m_vel.y*m_vel.y);
+		Real curVelocity = WWMath::SqrtfOrigin(m_vel.x*m_vel.x + m_vel.y*m_vel.y);
 		if (desiredVelocity > curVelocity)
 		{
 			return;
@@ -1061,7 +1061,7 @@ void PhysicsBehavior::transferVelocityTo(PhysicsBehavior* that) const
 {
 	if (that != nullptr)
 	{
-		that->m_vel.add(&m_vel);
+		that->m_vel.add(m_vel);
 		that->m_velMag = INVALID_VEL_MAG;
 	}
 }
@@ -1070,7 +1070,7 @@ void PhysicsBehavior::transferVelocityTo(PhysicsBehavior* that) const
 void PhysicsBehavior::addVelocityTo( const Coord3D *vel)
 {
 	if (vel != nullptr)
-		m_vel.add( vel );
+		m_vel.add( *vel );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1320,7 +1320,7 @@ void PhysicsBehavior::onCollide( Object *other, const Coord3D *loc, const Coord3
 
 	m_lastCollidee = other->getID();
 
-	Real dist = sqrtf(distSqr);
+	Real dist = WWMath::SqrtfOrigin(distSqr);
 	Real overlap = usRadius + themRadius - dist;
 
 	// if objects are coincident, dist is zero, so force would be infinite -- clearly

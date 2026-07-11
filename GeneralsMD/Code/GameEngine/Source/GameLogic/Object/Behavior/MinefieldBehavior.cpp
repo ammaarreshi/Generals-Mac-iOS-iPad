@@ -570,7 +570,7 @@ void MinefieldBehavior::setScootParms(const Coord3D& start, const Coord3D& end)
 	if (start.z > endOnGround.z)
 	{
 		// figure out how long it will take to fall, and replace scoot time with that
-		UnsignedInt fallingTime = REAL_TO_INT_CEIL(sqrtf(2.0f * (start.z - endOnGround.z) / fabs(TheGlobalData->m_gravity)));
+		UnsignedInt fallingTime = REAL_TO_INT_CEIL(WWMath::SqrtfOrigin(2.0f * (start.z - endOnGround.z) / fabs(TheGlobalData->m_gravity)));
 		// we can scoot after we land, but don't want to stop scooting before we land
 		if (scootFromStartingPointTime < fallingTime)
 			scootFromStartingPointTime = fallingTime;
@@ -588,7 +588,7 @@ void MinefieldBehavior::setScootParms(const Coord3D& start, const Coord3D& end)
 		Real dx = endOnGround.x - start.x;
 		Real dy = endOnGround.y - start.y;
 		Real dz = endOnGround.z - start.z;
-		Real dist = sqrt(sqr(dx) + sqr(dy));
+		Real dist = WWMath::SqrtOrigin(sqr(dx) + sqr(dy));
 		if (dist <= 0.1f && fabs(dz) <= 0.1f)
 		{
 			obj->setPosition(&endOnGround);

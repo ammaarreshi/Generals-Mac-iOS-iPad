@@ -486,7 +486,7 @@ void WaypointOptions::OnChangeWaypointnameEdit()
 		PolygonTrigger *pTrig;
 		for (pTrig=PolygonTrigger::getFirstPolygonTrigger(); !didMatch && pTrig; pTrig = pTrig->getNext()) {
 			if (pTrig==theTrigger) continue; // don't check against yourself.
-			AsciiString trigName = pTrig->getTriggerName();
+			const AsciiString& trigName = pTrig->getTriggerName();
 			if (name == trigName) {
 				if (pTrig->isValid()) {
 					didMatch = true;

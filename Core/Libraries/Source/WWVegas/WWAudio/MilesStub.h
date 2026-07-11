@@ -19,17 +19,18 @@
 /*
 ** MilesStub.h
 **
-** Stub definitions for Miles Sound System types when compiling on Linux with OpenAL.
+** Stub definitions for Miles Sound System types when compiling on Linux with OpenAL or MiniAudio.
 **
 ** TheSuperHackers @build 15/12/2024
+** GeneralsX @feature fbraz 11/06/2026 Updated to also work with MiniAudio backend
 ** This header provides minimal type definitions to allow WWAudio.h and related
 ** files to compile without the Miles SDK headers. These are only used when
-** SAGE_USE_OPENAL is defined (Linux builds).
+** SAGE_USE_OPENAL or SAGE_USE_MINIAUDIO is defined (Linux/macOS builds).
 */
 
 #pragma once
 
-#if defined(SAGE_USE_OPENAL) && !defined(_MILES_STUB_H)
+#if (defined(SAGE_USE_OPENAL) || defined(SAGE_USE_MINIAUDIO)) && !defined(_MILES_STUB_H)
 #define _MILES_STUB_H
 
 // VC++ calling convention stubs

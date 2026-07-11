@@ -116,6 +116,10 @@ EnumeratedIP * IPEnumeration::getAddresses()
 			// GeneralsX @bugfix BenderAI 31/03/2026 Use ntohl to convert from network byte order before extracting octets;
 			// reading s_addr byte-by-byte on little-endian platforms reverses the IPv4 octets.
 			const UnsignedInt hostAddr = ntohl(addr->sin_addr.s_addr);
+			// GeneralsX @build GitHubCopilot 11/04/2026 Log POSIX interface candidates used for LAN IP selection.
+			DEBUG_LOG(("IPEnumeration::getAddresses - interface=%s flags=0x%X ip=%d.%d.%d.%d",
+				(ifa->ifa_name != nullptr) ? ifa->ifa_name : "<unknown>", ifa->ifa_flags,
+				PRINTF_IP_AS_4_INTS(hostAddr)));
 			addNewIP(
 				(UnsignedByte)((hostAddr >> 24) & 0xFF),
 				(UnsignedByte)((hostAddr >> 16) & 0xFF),
@@ -250,5 +254,4 @@ AsciiString IPEnumeration::getMachineName()
 
 	return AsciiString(hostname);
 }
-
 

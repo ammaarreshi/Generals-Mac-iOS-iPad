@@ -226,7 +226,7 @@ cd build/linux64-deploy/GeneralsMD
 - Known gaps (TODO Phase 2)
 
 ### fighter19 Reference Patterns
-**Location**: `references/fighter19-dxvk-port/`
+**Location**: `references/old-refs/fighter19-dxvk-port/`
 
 **Key files for comparison**:
 - `GeneralsMD/Code/Main/SDL3Main.cpp` - Entry point pattern
@@ -439,10 +439,10 @@ docs/WORKDIR/planning/NEXT_STEPS.md                     (this file - updated)
 2. **File Comparison**:
    ```bash
    # Compare structure changes
-   diff -r GeneralsMD/Code/GameEngineDevice/ references/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/
+   diff -r GeneralsMD/Code/GameEngineDevice/ references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/
    
    # Compare CMake changes
-   diff CMakePresets.json references/fighter19-dxvk-port/CMakePresets.json
+   diff CMakePresets.json references/old-refs/fighter19-dxvk-port/CMakePresets.json
    ```
 
 3. **Grep Search**:
@@ -451,7 +451,7 @@ docs/WORKDIR/planning/NEXT_STEPS.md                     (this file - updated)
    grep -r "IDirect3D8" --include="*.cpp" --include="*.h"
    
    # Find DXVK integration points in fighter19
-   grep -r "DXVK\|SDL3" references/fighter19-dxvk-port/
+   grep -r "DXVK\|SDL3" references/old-refs/fighter19-dxvk-port/
    ```
 
 ## Docker Build Commands (Keep Mac Clean!)

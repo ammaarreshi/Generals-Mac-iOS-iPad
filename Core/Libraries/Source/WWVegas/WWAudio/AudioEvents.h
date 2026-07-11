@@ -141,12 +141,12 @@ struct AUDIO_CALLBACK_STRUCT
 //	Protected structures
 /////////////////////////////////////////////////////////////////////////////////
 template <class T>
-class AudioCallbackListClass : public SimpleDynVecClass< AUDIO_CALLBACK_STRUCT<T> >
+class AudioCallbackListClass : public SimpleDynVecClass< AUDIO_CALLBACK_STRUCT<T>/**/>
 {
-	using SimpleDynVecClass< AUDIO_CALLBACK_STRUCT<T> >::Vector;
-	using SimpleDynVecClass< AUDIO_CALLBACK_STRUCT<T> >::ActiveCount;
-	using SimpleDynVecClass< AUDIO_CALLBACK_STRUCT<T> >::Delete;
-	using SimpleDynVecClass< AUDIO_CALLBACK_STRUCT<T> >::Add;
+	using SimpleDynVecClass< AUDIO_CALLBACK_STRUCT<T>/**/>::Vector;
+	using SimpleDynVecClass< AUDIO_CALLBACK_STRUCT<T>/**/>::ActiveCount;
+	using SimpleDynVecClass< AUDIO_CALLBACK_STRUCT<T>/**/>::Delete;
+	using SimpleDynVecClass< AUDIO_CALLBACK_STRUCT<T>/**/>::Add;
 
 public:
 

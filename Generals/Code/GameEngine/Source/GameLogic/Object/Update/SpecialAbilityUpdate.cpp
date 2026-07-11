@@ -1008,7 +1008,7 @@ Bool SpecialAbilityUpdate::initLaser(Object* specialObject, Object* target )
 	if( !getObject()->getSingleLogicalBonePosition( data->m_specialObjectAttachToBoneName.str(), &startPos, nullptr ) )
 	{
 		//If we can't find the bone, then set it to our current position.
-		startPos.set( getObject()->getPosition() );
+		startPos.set( *getObject()->getPosition() );
 	}
 
 	Coord3D endPos;
@@ -1364,13 +1364,13 @@ void SpecialAbilityUpdate::triggerAbilityEffect()
 					UnicodeString moneyString;
 					moneyString.format( TheGameText->fetch( "GUI:AddCash" ), cash );
 					Coord3D pos;
-					pos.set( object->getPosition() );
+					pos.set( *object->getPosition() );
 					pos.z += 20.0f; //add a little z to make it show up above the unit.
 					TheInGameUI->addFloatingText( moneyString, &pos, GameMakeColor( 0, 255, 0, 255 ) );
 
 					//Display cash lost floating over the target
 					moneyString.format( TheGameText->fetch( "GUI:LoseCash" ), cash );
-					pos.set( target->getPosition() );
+					pos.set( *target->getPosition() );
 					pos.z += 30.0f; //add a little z to make it show up above the unit.
 					TheInGameUI->addFloatingText( moneyString, &pos, GameMakeColor( 255, 0, 0, 255 ) );
 				}
@@ -1595,23 +1595,23 @@ void SpecialAbilityUpdate::finishAbility()
 	if( data->m_fleeRangeAfterCompletion && validTarget )
 	{
 		Coord3D pos;
-		pos.set( getObject()->getPosition() );
+		pos.set( *getObject()->getPosition() );
 
 		AIUpdateInterface *ai = getObject()->getAIUpdateInterface();
 		if( ai )
 		{
 			Coord3D dir;
-			dir.set( getObject()->getUnitDirectionVector2D() );
+			dir.set( *getObject()->getUnitDirectionVector2D() );
 			dir.normalize();
 			dir.scale( data->m_fleeRangeAfterCompletion );
 
 			if( data->m_flipObjectAfterUnpacking || data->m_flipObjectAfterPacking )
 			{
-				pos.add( &dir );
+				pos.add( dir );
 			}
 			else
 			{
-				pos.sub( &dir );
+				pos.sub( dir );
 			}
 			// Now check for mines.  Normally we are fleeing from a bomb we just planted.
 			// It is not good to run back towards the previous mine we just planted about
@@ -1629,7 +1629,7 @@ void SpecialAbilityUpdate::finishAbility()
 						dir.normalize();
 						dir.scale(data->m_fleeRangeAfterCompletion);
 						pos = *mine->getPosition();
-						pos.add(&dir);
+						pos.add(dir);
 					}
 				}
 			}

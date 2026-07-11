@@ -7,7 +7,7 @@ If `cmake --preset macos-vulkan` takes more than 20 minutes, we can use the figh
 
 ### 1. Check if fighter19 has DXVK compiled
 ```bash
-ls -la references/fighter19-dxvk-port/GeneralsMD/Run/
+ls -la references/old-refs/fighter19-dxvk-port/GeneralsMD/Run/
 # Should have libdxvk_d3d8.0.dylib + libdxvk_d3d9.0.dylib
 ```
 
@@ -17,13 +17,13 @@ mkdir -p build/macos-vulkan-backup
 cp -r build/macos-vulkan build/macos-vulkan-backup
 
 # copy DXVK dylibs
-cp references/fighter19-dxvk-port/GeneralsMD/Run/libdxvk_*.d*.llib \
+cp references/old-refs/fighter19-dxvk-port/GeneralsMD/Run/libdxvk_*.d*.llib \
    build/macos-vulkan/_run/ 2>/dev/null || echo "Not available"
 ```
 
 ### 3. If fighter19 has no build, clone and compile
 ```bash
-cd references/fighter19-dxvk-port
+cd references/old-refs/fighter19-dxvk-port
 cmake --preset linux64-deploy  # For native builds
 # OR
 cmake --preset macos-vulkan    # If it has a macOS preset

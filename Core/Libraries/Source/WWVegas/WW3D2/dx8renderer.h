@@ -84,6 +84,7 @@ class DX8TextureCategoryClass : public MultiListObjectClass
 
 	PolyRenderTaskClass *						render_task_head;			// polygon renderers queued for rendering
 	static bool											m_gForceMultiply;  // Forces opaque materials to use the multiply blend - pseudo transparent effect.  jba.
+	friend void LogSkinRender(class DX8TextureCategoryClass* category, int pass);
 
 public:
 

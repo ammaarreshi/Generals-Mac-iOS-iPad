@@ -46,7 +46,11 @@ extern "C" {
 	#include <libswscale/swscale.h>
 }
 
-#ifdef SAGE_USE_OPENAL
+// GeneralsX @build Mr. Meeseeks 17/06/2026 Prioritize MiniAudio backend over OpenAL to prevent redefinition conflicts
+#ifdef SAGE_USE_MINIAUDIO
+#include "MiniAudioDevice/MiniAudioManager.h"
+#include "MiniAudioDevice/MiniAudioStream.h"
+#elif defined(SAGE_USE_OPENAL)
 #include "OpenALAudioDevice/OpenALAudioManager.h"
 #include "OpenALAudioDevice/OpenALAudioStream.h"
 #endif
@@ -311,7 +315,11 @@ FFmpegVideoStream::FFmpegVideoStream(FFmpegFile* file)
 	m_ffmpegFile->setFrameCallback(onFrame);
 	m_ffmpegFile->setUserData(this);
 
-#ifdef SAGE_USE_OPENAL
+	// GeneralsX @build Mr. Meeseeks 17/06/2026 Prioritize MiniAudio backend over OpenAL to prevent redefinition conflicts
+#ifdef SAGE_USE_MINIAUDIO
+	MiniAudioStream* audioStream = (MiniAudioStream*)TheAudio->getHandleForBink();
+	audioStream->reset();
+#elif defined(SAGE_USE_OPENAL)
 	// Release the audio handle if it's already in use
 	OpenALAudioStream* audioStream = (OpenALAudioStream*)TheAudio->getHandleForBink();
 	audioStream->reset();
@@ -321,7 +329,10 @@ FFmpegVideoStream::FFmpegVideoStream(FFmpegFile* file)
 	while (m_good && m_gotFrame == false)
 		m_good = m_ffmpegFile->decodePacket();
 
-#ifdef SAGE_USE_OPENAL
+#ifdef SAGE_USE_MINIAUDIO
+	audioStream->setVolume(1.0f);
+	audioStream->play();
+#elif defined(SAGE_USE_OPENAL)
 	// Start audio playback
 	// GeneralsX @bugfix fbraz3 23/04/2026 Ensure video stream starts with audible gain even after prior source reuse.
 	// Issue: https://github.com/fbraz3/GeneralsX/issues/38
@@ -341,7 +352,14 @@ FFmpegVideoStream::~FFmpegVideoStream()
 	// GeneralsX @bugfix fbraz3 20/04/2026 Stop and clear queued OpenAL buffers so video audio
 	// does not bleed into gameplay after the loading screen closes the stream.
 	// Issue: https://github.com/fbraz3/GeneralsX/issues/38
-#ifdef SAGE_USE_OPENAL
+#ifdef SAGE_USE_MINIAUDIO
+	if (TheAudio)
+	{
+		MiniAudioStream* audioStream = (MiniAudioStream*)TheAudio->getHandleForBink();
+		if (audioStream)
+			audioStream->reset();
+	}
+#elif defined(SAGE_USE_OPENAL)
 	if (TheAudio)
 	{
 		OpenALAudioStream* audioStream = (OpenALAudioStream*)TheAudio->getHandleForBink();
@@ -363,9 +381,13 @@ void FFmpegVideoStream::onFrame(AVFrame *frame, int stream_idx, int stream_type,
 		videoStream->m_frame = av_frame_clone(frame);
 		videoStream->m_gotFrame = true;
 	}
-#ifdef SAGE_USE_OPENAL
+#if defined(SAGE_USE_OPENAL) || defined(SAGE_USE_MINIAUDIO)
 	else if (stream_type == AVMEDIA_TYPE_AUDIO) {
+#ifdef SAGE_USE_MINIAUDIO
+		MiniAudioStream* audioStream = (MiniAudioStream*)TheAudio->getHandleForBink();
+#elif defined(SAGE_USE_OPENAL)
 		OpenALAudioStream* audioStream = (OpenALAudioStream*)TheAudio->getHandleForBink();
+#endif
 		AVSampleFormat sampleFmt = static_cast<AVSampleFormat>(frame->format);
 		const int bytesPerSample = av_get_bytes_per_sample(sampleFmt);
 		const int frameSize = av_samples_get_buffer_size(nullptr, frame->ch_layout.nb_channels, frame->nb_samples, sampleFmt, 1);
@@ -436,9 +458,18 @@ void FFmpegVideoStream::onFrame(AVFrame *frame, int stream_idx, int stream_type,
 			frameData = videoStream->m_audioBuffer;
 		}
 
+#ifdef SAGE_USE_MINIAUDIO
+		ma_format format = ma_format_unknown;
+		if (outputBitsPerSample == 8) format = ma_format_u8;
+		else if (outputBitsPerSample == 16) format = ma_format_s16;
+		else if (outputBitsPerSample == 32) format = ma_format_f32;
+		audioStream->bufferData(frameData, outputFrameSize, format, frame->sample_rate, frame->ch_layout.nb_channels);
+		audioStream->update();
+#elif defined(SAGE_USE_OPENAL)
 		ALenum format = OpenALAudioManager::getALFormat(frame->ch_layout.nb_channels, outputBitsPerSample);
 		audioStream->bufferData(frameData, outputFrameSize, format, frame->sample_rate);
 		audioStream->update();
+#endif
 	}
 #endif
 }
@@ -450,7 +481,13 @@ void FFmpegVideoStream::onFrame(AVFrame *frame, int stream_idx, int stream_type,
 
 void FFmpegVideoStream::update()
 {
-#ifdef SAGE_USE_OPENAL
+#ifdef SAGE_USE_MINIAUDIO
+	MiniAudioStream* audioStream = (MiniAudioStream*)TheAudio->getHandleForBink();
+	if (!audioStream->isPlaying()) {
+		audioStream->play();
+	}
+	audioStream->update();
+#elif defined(SAGE_USE_OPENAL)
 	// Resume audio playback only if not already playing.
 	// Calling alSourcePlay() on an AL_PLAYING source restarts it from the
 	// first unprocessed buffer (OpenAL 1.1 spec §4.3.9), which causes

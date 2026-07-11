@@ -92,8 +92,7 @@ void SoundManager::update()
 //-------------------------------------------------------------------------------------------------
 void SoundManager::reset()
 {
-	m_numPlaying2DSamples = 0;
-	m_numPlaying3DSamples = 0;
+
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -135,11 +134,6 @@ Real SoundManager::getCameraAudibleDistance()
 //-------------------------------------------------------------------------------------------------
 void SoundManager::addAudioEvent(AudioEventRTS *&eventToAdd)
 {
-	if (m_num2DSamples == 0 && m_num3DSamples == 0) {
-		m_num2DSamples = TheAudio->getNum2DSamples();
-		m_num3DSamples = TheAudio->getNum3DSamples();
-	}
-
 	if (canPlayNow(eventToAdd)) {
 #ifdef INTENSIVE_AUDIO_DEBUG
 		DEBUG_LOG((" - appended to request list with handle '%d'.", (UnsignedInt) eventToAdd->getPlayingHandle()));
@@ -151,46 +145,6 @@ void SoundManager::addAudioEvent(AudioEventRTS *&eventToAdd)
 	} else {
 		TheAudio->releaseAudioEventRTS(eventToAdd);
 	}
-}
-
-//-------------------------------------------------------------------------------------------------
-void SoundManager::notifyOf2DSampleStart()
-{
-	++m_numPlaying2DSamples;
-}
-
-//-------------------------------------------------------------------------------------------------
-void SoundManager::notifyOf3DSampleStart()
-{
-	++m_numPlaying3DSamples;
-}
-
-//-------------------------------------------------------------------------------------------------
-void SoundManager::notifyOf2DSampleCompletion()
-{
-	if (m_numPlaying2DSamples > 0) {
-		--m_numPlaying2DSamples;
-	}
-}
-
-//-------------------------------------------------------------------------------------------------
-void SoundManager::notifyOf3DSampleCompletion()
-{
-	if (m_numPlaying3DSamples > 0) {
-		--m_numPlaying3DSamples;
-	}
-}
-
-//-------------------------------------------------------------------------------------------------
-Int SoundManager::getAvailableSamples()
-{
-	return (m_num2DSamples - m_numPlaying2DSamples);
-}
-
-//-------------------------------------------------------------------------------------------------
-Int SoundManager::getAvailable3DSamples()
-{
-	return (m_num3DSamples - m_numPlaying3DSamples);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -220,7 +174,7 @@ Bool SoundManager::canPlayNow( AudioEventRTS *event )
 		const Coord3D *pos = event->getCurrentPosition();
 		if (pos)
 		{
-			distance.sub(pos);
+			distance.sub(*pos);
 			if (distance.length() >= event->getAudioEventInfo()->m_maxDistance)
 			{
 #ifdef INTENSIVE_AUDIO_DEBUG
@@ -272,18 +226,19 @@ Bool SoundManager::canPlayNow( AudioEventRTS *event )
 
 	if (event->isPositionalAudio())
 	{
-		if (m_numPlaying3DSamples < m_num3DSamples)
+		if (TheAudio->getNumAvailable3DSamples() > 0)
 		{
 			return true;
 		}
 #ifdef INTENSIVE_AUDIO_DEBUG
-		DEBUG_LOG(("- %d samples playing, %d samples available", m_numPlaying3DSamples, m_num3DSamples));
+		DEBUG_LOG(("- %d samples playing, %d samples available",
+			TheAudio->getNum3DSamples() - TheAudio->getNumAvailable3DSamples(), TheAudio->getNum3DSamples()));
 #endif
 	}
 	else
 	{
 		// its a UI sound (and thus, 2-D)
-		if (m_numPlaying2DSamples < m_num2DSamples)
+		if (TheAudio->getNumAvailable2DSamples() > 0)
 		{
 			return true;
 		}

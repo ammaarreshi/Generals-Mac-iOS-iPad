@@ -42,6 +42,15 @@ endif()
 
 add_library(sage_patch SHARED ${SAGE_PATCH_SOURCES})
 
+# SagePatch sources use modern C++ (scoped enums, brace-init). The legacy engine
+# builds at C++98, and without pinning a standard here the target inherits it,
+# so a standards-strict compiler (e.g. AppleClang) fails to build sage_patch with
+# "scoped enumerations are a C++11 extension". Pin this target to C++17.
+set_target_properties(sage_patch PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+)
+
 target_include_directories(sage_patch PRIVATE
     include
     ${CMAKE_BINARY_DIR}/_deps/sdl3-src/include

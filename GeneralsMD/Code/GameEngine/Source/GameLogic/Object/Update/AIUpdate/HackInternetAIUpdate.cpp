@@ -551,7 +551,7 @@ StateReturnType HackInternetState::update()
 					moneyString.format( TheGameText->fetch( "GUI:AddCash" ), amount );
 					Coord3D pos;
 					pos.zero();
-					pos.add( owner->getPosition() );
+					pos.add( *owner->getPosition() );
 					pos.z += 20.0f; //add a little z to make it show up above the unit.
 
 

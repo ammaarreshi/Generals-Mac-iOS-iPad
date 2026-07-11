@@ -423,7 +423,7 @@ grep "^\[" logs/session25_fix_<priority>.log | tail -5
    - **Missing:** `target_compile_definitions()` in CMake (NOW FIXED)
 
 ### Key Reference Files
-- **GLM Pattern:** `references/fighter19-dxvk-port/GeneralsMD/Code/GameEngine/Source/Common/Bezier/BezierSegment.cpp`
+- **GLM Pattern:** `references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/GameEngine/Source/Common/Bezier/BezierSegment.cpp`
 - **POSIX Compat:** `GeneralsMD/Code/CompatLib/Include/file_compat.h` (already in project)
 - **Time Compat:** `GeneralsMD/Code/CompatLib/Include/time_compat.h` (already in project)
 

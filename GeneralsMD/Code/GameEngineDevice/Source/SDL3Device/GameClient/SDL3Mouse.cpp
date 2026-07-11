@@ -31,11 +31,13 @@
 #include "SDL3Device/GameClient/SDL3Mouse.h"
 #include <cstdio>
 #include <cstring>
+#include <cmath>
 
 // GeneralsX @bugfix felipebraz 18/02/2026 Include GameLogic for frame tracking
 #include "GameLogic/GameLogic.h"
 // GeneralsX @bugfix felipebraz 20/02/2026 Include Display to get internal resolution for coordinate scaling
 #include "GameClient/Display.h"
+#include "GameClient/InGameUI.h"
 // GeneralsX @bugfix BenderAI 22/02/2026 Add SDL3_image for cursor loading
 // SDL3_image now finds system libpng via pkg-config (CMAKE_PREFIX_PATH reordered in cmake/sdl3.cmake)
 #include <SDL3_image/SDL_image.h>
@@ -140,7 +142,9 @@ SDL3Mouse::SDL3Mouse(SDL_Window* window)
 	  m_RightButtonDownTime(0),
 	  m_MiddleButtonDownTime(0),
 	  m_LastFrameNumber(0),  // GeneralsX @bugfix felipebraz 18/02/2026 Initialize frame tracking
-	  m_directionFrame(0)    // GeneralsX @bugfix BenderAI 22/02/2026 Initialize cursor direction frame
+	  m_directionFrame(0),    // GeneralsX @bugfix BenderAI 22/02/2026 Initialize cursor direction frame
+	  m_lastSetCursor(INVALID_MOUSE_CURSOR),
+	  m_lastSetDirectionFrame(-1)
 {
 	// GeneralsX @bugfix BenderAI 18/02/2026 Temporarily disable debug logging (Phase 1.8)
 	// fprintf(stderr, "DEBUG: SDL3Mouse::SDL3Mouse() created\n");
@@ -402,6 +406,9 @@ void SDL3Mouse::reset(void)
 	SDL_ShowCursor();
 	m_IsVisible = true;
 
+	m_lastSetCursor = INVALID_MOUSE_CURSOR;
+	m_lastSetDirectionFrame = -1;
+
 	// Clear event buffer - Fighter19 pattern
 	// GeneralsX @refactor felipebraz 16/02/2026
 	memset(m_eventBuffer, 0, sizeof(m_eventBuffer));
@@ -455,6 +462,16 @@ void SDL3Mouse::setCursor(MouseCursor cursor)
 	if (m_LostFocus)  // GeneralsX @bugfix BenderAI 22/02/2026 Fix case: m_LostFocus not m_lostFocus
 		return;	//stop messing with mouse cursor if we don't have focus.
 
+	setCursorDirection(cursor);
+
+	if (cursor == m_lastSetCursor && m_directionFrame == m_lastSetDirectionFrame)
+	{
+		return; // Avoid redundant OS cursor sets
+	}
+
+	m_lastSetCursor = cursor;
+	m_lastSetDirectionFrame = m_directionFrame;
+
 	bool bUseDefaultCursor = false;
 	if (cursor == NONE || !m_visible)
 	{
@@ -489,6 +506,44 @@ void SDL3Mouse::setCursor(MouseCursor cursor)
 
 	// save current cursor
 	m_currentCursor = cursor;
+}
+
+void SDL3Mouse::draw(void)
+{
+	setCursor(m_currentCursor);
+}
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#endif
+
+void SDL3Mouse::setCursorDirection(MouseCursor cursor)
+{
+	Coord2D offset = {0, 0};
+	//Check if we have a directional cursor that needs different images for each direction
+	if (m_cursorInfo[cursor].numDirections > 1 && TheInGameUI && TheInGameUI->isScrolling())
+	{
+		offset = TheInGameUI->getScrollAmount();
+		if (offset.x || offset.y)
+		{
+			offset.normalize();
+			Real theta = atan2(offset.y, offset.x);
+			theta = fmod(theta+M_PI*2,M_PI*2);
+			Int numDirections=m_cursorInfo[m_currentCursor].numDirections;
+			//Figure out which of our predrawn cursor orientations best matches the
+			//actual cursor direction.  Frame 0 is assumed to point right and continue
+			//clockwise.
+			m_directionFrame=(Int)(theta/(2.0f*M_PI/(Real)numDirections)+0.5f);
+			if (m_directionFrame >= numDirections)
+				m_directionFrame = 0;
+		}
+		else
+		{
+			m_directionFrame=0;
+		}
+	}
+	else
+		m_directionFrame = 0;
 }
 
 /**
@@ -757,7 +812,13 @@ void SDL3Mouse::translateWheelEvent(const SDL_MouseWheelEvent& event, MouseIO *r
 
 	// SDL3 wheel: positive = up/away, negative = down/toward user
 	// Multiply by MOUSE_WHEEL_DELTA (120) to match Windows behavior
-	result->wheelPos = (Int)(event.y * MOUSE_WHEEL_DELTA);
+	// GeneralsX @bugfix msmesoft 17/06/2026 macOS "natural scrolling" makes SDL
+	// flag the wheel values as SDL_MOUSEWHEEL_FLIPPED; invert them so the in-game
+	// scroll direction matches the Windows convention regardless of the OS setting.
+	float wheelY = event.y;
+	if (event.direction == SDL_MOUSEWHEEL_FLIPPED)
+		wheelY = -wheelY;
+	result->wheelPos = (Int)(wheelY * MOUSE_WHEEL_DELTA);
 
 	result->leftState = MBS_None;
 	result->rightState = MBS_None;

@@ -180,7 +180,7 @@ grep -n "#include.*windows_compat" Core/Libraries/Source/WWVegas/WW3D2/agg_def.c
 **Se GDI errors persist**:
 ```bash
 # Check if BITMAP struct size matches Windows
-# Fighter19 reference: references/fighter19-dxvk-port/GeneralsMD/Code/CompatLib/Include/gdi_compat.h
+# Fighter19 reference: references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/CompatLib/Include/gdi_compat.h
 ```
 
 **Se file API errors persist**:
@@ -402,23 +402,23 @@ void GameObject::Update() {
 ## 🔗 Key References
 
 ### Fighter19 DXVK Port (PRIMARY)
-- **Path**: `references/fighter19-dxvk-port/`
+- **Path**: `references/old-refs/fighter19-dxvk-port/`
 - **Use**: Graphics (DXVK), SDL3, POSIX compat, MinGW builds
 - **Coverage**: Generals + Zero Hour (full)
 
 ### jmarshall Modern Port (SECONDARY)  
-- **Path**: `references/jmarshall-win64-modern/`
+- **Path**: `references/old-refs/jmarshall-win64-modern/`
 - **Use**: OpenAL audio, INI parser fixes, 64-bit compat
 - **Coverage**: Generals ONLY (no Zero Hour)
 
 ### DeepWiki Repos
 ```bash
 # Fighter19 patterns:
-references/fighter19-dxvk-port/ (local copy)
+references/old-refs/fighter19-dxvk-port/ (local copy)
 Fighter19/CnC_Generals_Zero_Hour (deepwiki)
 
 # jmarshall patterns:
-references/jmarshall-win64-modern/ (local copy)
+references/old-refs/jmarshall-win64-modern/ (local copy)
 jmarshall2323/CnC_Generals_Zero_Hour (deepwiki)
 ```
 

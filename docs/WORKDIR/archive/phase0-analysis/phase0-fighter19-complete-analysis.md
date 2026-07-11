@@ -2,7 +2,7 @@
 
 **Created**: 2026-02-08  
 **Status**: Complete Investigation  
-**Reference**: `references/fighter19-dxvk-port/`
+**Reference**: `references/old-refs/fighter19-dxvk-port/`
 
 ---
 
@@ -384,7 +384,7 @@ resources/                           ← Build resources
 
 ## References
 
-- fighter19 repo: `references/fighter19-dxvk-port/`
+- fighter19 repo: `references/old-refs/fighter19-dxvk-port/`
 - Current analysis: This document
 - Phase planning: `docs/WORKDIR/phases/`
 - Build references: `cmake/`, `CMakePresets.json`

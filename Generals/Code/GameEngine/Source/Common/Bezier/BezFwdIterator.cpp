@@ -130,9 +130,9 @@ const Coord3D& BezFwdIterator::getCurrent() const
 //-------------------------------------------------------------------------------------------------
 void BezFwdIterator::next()
 {
-	mCurrPoint.add(&mDq);
-	mDq.add(&mDDq);
-	mDDq.add(&mDDDq);
+	mCurrPoint.add(mDq);
+	mDq.add(mDDq);
+	mDDq.add(mDDDq);
 
 	++mStep;
 }

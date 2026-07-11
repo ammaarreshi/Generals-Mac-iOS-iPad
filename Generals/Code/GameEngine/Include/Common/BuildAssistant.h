@@ -92,6 +92,7 @@ enum LegalBuildCode CPP_11(: Int)
 	LBC_NO_CLEAR_PATH,
 	LBC_SHROUD,
 	LBC_TOO_CLOSE_TO_SUPPLIES,
+	LBC_GENERIC_FAILURE,
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -109,12 +110,14 @@ public:
 
 	enum LocalLegalToBuildOptions
 	{
-		TERRAIN_RESTRICTIONS	= 0x00000001,	///< Check for basic terrain restrictions
-		CLEAR_PATH						= 0x00000002,	///< Must be able to path find to location
-		NO_OBJECT_OVERLAP			= 0X00000004,	///< Can't overlap enemy objects, or locally controlled objects that can't move out of the way
-		USE_QUICK_PATHFIND    = 0x00000008, ///< Use the quick pathfind method for CLEAR_PATH
-		SHROUD_REVEALED				= 0x00000010,	///< Check to make sure the shroud is revealed
-		NO_ENEMY_OBJECT_OVERLAP=0x00000020,	///< Can't overlap enemy objects only.
+		TERRAIN_RESTRICTIONS		= 0x00000001,	///< Check for basic terrain restrictions
+		CLEAR_PATH							= 0x00000002,	///< Must be able to path find to location
+		NO_OBJECT_OVERLAP				= 0X00000004,	///< Can't overlap enemy objects, or locally controlled objects that can't move out of the way
+		USE_QUICK_PATHFIND			= 0x00000008, ///< Use the quick pathfind method for CLEAR_PATH
+		SHROUD_REVEALED					= 0x00000010,	///< Check to make sure the shroud is revealed
+		NO_ENEMY_OBJECT_OVERLAP	= 0x00000020,	///< Can't overlap enemy objects only.
+		IGNORE_STEALTHED				= 0x00000040, ///< Units that we can't see are legal to "build" on. (when moving mouse around)
+		FAIL_STEALTHED_WITHOUT_FEEDBACK = 0x00000080 ///< USE WITH IGNORE_STEALTHED except it will fail without BIB feedback (when clicking to place).
 	};
 
 public:

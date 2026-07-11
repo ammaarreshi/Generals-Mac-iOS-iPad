@@ -99,7 +99,7 @@ typedef std::pair<AsciiString, UnsignedInt> PairAsciiStringUINT;
 typedef std::list<PairAsciiStringUINT> ListAsciiStringUINT;
 typedef ListAsciiStringUINT::iterator ListAsciiStringUINTIt;
 
-typedef std::map< const ThingTemplate *, Int, std::less<const ThingTemplate *> > AttackPriorityMap;
+typedef std::map< const ThingTemplate *, Int, std::less<const ThingTemplate *>/**/> AttackPriorityMap;
 typedef std::pair<AsciiString, ObjectID> AsciiStringObjectIDPair;
 typedef std::list<AsciiStringObjectIDPair> ListAsciiStringObjectID;
 typedef std::list<AsciiStringObjectIDPair>::iterator ListAsciiStringObjectIDIt;

@@ -2,7 +2,7 @@
 
 **Created**: 2026-02-07
 **Status**: In Progress
-**Reference**: `references/jmarshall-win64-modern/`
+**Reference**: `references/old-refs/jmarshall-win64-modern/`
 
 ## Objective
 

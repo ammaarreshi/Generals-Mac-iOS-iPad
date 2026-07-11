@@ -44,6 +44,7 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include <always.h>
+#include <fstream>
 #include "W3DDevice/GameClient/W3DAssetManager.h"
 #include "proto.h"
 #include "rendobj.h"
@@ -639,8 +640,46 @@ TextureClass * W3DAssetManager::Recolor_Texture_One_Time(TextureClass *texture, 
 
 	oldsurf=texture->Get_Surface_Level();
 
+	{
+		std::ofstream dbg("/Users/felipebraz/PhpstormProjects/pessoal/GeneralsX/logs/recolor_debug.log", std::ios::app);
+		if (dbg.is_open()) {
+			dbg << "Recoloring: " << (name ? name : "null") << " color: " << std::hex << color << std::dec
+				<< " W: " << desc.Width << " H: " << desc.Height << " Format: " << desc.Format << "\n";
+			int old_pitch = 0;
+			unsigned char* old_bits = (unsigned char*)oldsurf->Lock(&old_pitch);
+			if (old_bits) {
+				dbg << "  oldsurf locked successfully. Pitch: " << old_pitch << ". First pixels: ";
+				for (int i = 0; i < 32 && i < old_pitch * desc.Height; i++) {
+					dbg << std::hex << (int)old_bits[i] << " ";
+				}
+				dbg << std::dec << "\n";
+				oldsurf->Unlock();
+			} else {
+				dbg << "  oldsurf LOCK FAILED!\n";
+			}
+		}
+	}
+
 	newsurf=NEW_REF(SurfaceClass,(desc.Width,desc.Height,desc.Format));
 	newsurf->Copy(0,0,0,0,desc.Width,desc.Height,oldsurf);
+
+	{
+		std::ofstream dbg("/Users/felipebraz/PhpstormProjects/pessoal/GeneralsX/logs/recolor_debug.log", std::ios::app);
+		if (dbg.is_open()) {
+			int new_pitch = 0;
+			unsigned char* new_bits = (unsigned char*)newsurf->Lock(&new_pitch);
+			if (new_bits) {
+				dbg << "  newsurf locked successfully. Pitch: " << new_pitch << ". First pixels: ";
+				for (int i = 0; i < 32 && i < new_pitch * desc.Height; i++) {
+					dbg << std::hex << (int)new_bits[i] << " ";
+				}
+				dbg << std::dec << "\n";
+				newsurf->Unlock();
+			} else {
+				dbg << "  newsurf LOCK FAILED!\n";
+			}
+		}
+	}
 
 	if (*(name+3) == 'D' || *(name+3) == 'd')
 		Remap_Palette(newsurf,color, true, false );	//texture only contains a palette stored in top row.

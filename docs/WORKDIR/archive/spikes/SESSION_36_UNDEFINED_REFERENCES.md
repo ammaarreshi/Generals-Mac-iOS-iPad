@@ -62,8 +62,8 @@ void parseCommandLine(const CommandLineParam* params, int argc, char** argv);
 **Recommended**: Option A (minimal change, maintains Windows compatibility)
 
 ### References to Check
-- `references/fighter19-dxvk-port/GeneralsMD/Code/Main/` - SDL3Main.cpp globals
-- `references/jmarshall-win64-modern/Code/Main/` - Modern refactor approach
+- `references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/Main/` - SDL3Main.cpp globals
+- `references/old-refs/jmarshall-win64-modern/Code/Main/` - Modern refactor approach
 
 ---
 
@@ -124,8 +124,8 @@ SDL_Window* g_mainWindow = nullptr;
 **Recommended**: Option A (matches fighter19 working implementation)
 
 ### References to Check
-- `references/fighter19-dxvk-port/GeneralsMD/Code/Main/SDL3Main.cpp` - Window creation
-- `references/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/Source/W3DDisplay.cpp` - Usage patterns
+- `references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/Main/SDL3Main.cpp` - Window creation
+- `references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/Source/W3DDisplay.cpp` - Usage patterns
 
 ---
 
@@ -236,7 +236,7 @@ void OSDisplayWarningBox(AsciiString title, AsciiString msg, unsigned int, unsig
 **Recommended**: Start with stubs, upgrade later.
 
 ### References to Check
-- `references/fighter19-dxvk-port/` - Check if implemented or stubbed
+- `references/old-refs/fighter19-dxvk-port/` - Check if implemented or stubbed
 - SDL3 docs: `SDL_SetCursor()`, SDL3 has no native message box
 
 ---
@@ -400,7 +400,7 @@ FileSystem* SDL3GameEngine::createLocalFileSystem() {
 ### References to Check
 - `Core/GameEngine/Source/Common/GameEngine.cpp` - Base implementations
 - `GeneralsMD/Code/GameEngine/Include/Common/GameEngine.h` - Virtual declarations
-- `references/fighter19-dxvk-port/` - How fighter19 handled SDL3GameEngine
+- `references/old-refs/fighter19-dxvk-port/` - How fighter19 handled SDL3GameEngine
 
 ---
 
@@ -594,20 +594,20 @@ bool GetStringFromRegistry(std::string, std::string, std::string&);
 
 ### fighter19 DXVK Port (PRIMARY for P0-P1)
 ```bash
-references/fighter19-dxvk-port/GeneralsMD/Code/Main/SDL3Main.cpp
-references/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/Source/SDL3GameEngine.cpp
-references/fighter19-dxvk-port/GeneralsMD/Code/GameEngine/Source/GameClient/GameText.cpp
+references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/Main/SDL3Main.cpp
+references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/Source/SDL3GameEngine.cpp
+references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/GameEngine/Source/GameClient/GameText.cpp
 ```
 
 ### jmarshall Win64 Port (SECONDARY for patterns)
 ```bash
-references/jmarshall-win64-modern/Code/Main/
-references/jmarshall-win64-modern/Code/Audio/  # OpenAL patterns
+references/old-refs/jmarshall-win64-modern/Code/Main/
+references/old-refs/jmarshall-win64-modern/Code/Audio/  # OpenAL patterns
 ```
 
 ### TheSuperHackers Upstream (BASE TRUTH)
 ```bash
-references/thesuperhackers-main/GeneralsMD/Code/GameEngine/Source/Common/GameEngine.cpp
+references/old-refs/thesuperhackers-main/GeneralsMD/Code/GameEngine/Source/Common/GameEngine.cpp
 ```
 
 ---

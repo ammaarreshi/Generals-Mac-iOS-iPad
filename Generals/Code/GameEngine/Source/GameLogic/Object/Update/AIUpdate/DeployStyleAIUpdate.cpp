@@ -116,7 +116,7 @@ void DeployStyleAIUpdate::aiDoCommand( const AICommandParms* parms )
 		switch( parms->m_cmd )
 		{
 			case AICMD_GUARD_POSITION:
-				m_position.set( &parms->m_pos );
+				m_position.set( parms->m_pos );
 				m_isGuardingPosition = TRUE;
 				//fall through (no break)
 			case AICMD_GUARD_OBJECT:
@@ -135,7 +135,7 @@ void DeployStyleAIUpdate::aiDoCommand( const AICommandParms* parms )
 				break;
 			case AICMD_ATTACK_POSITION:
 				m_isAttackPosition = TRUE;
-				m_position.set( &parms->m_pos );
+				m_position.set( parms->m_pos );
 				break;
 		}
 	}

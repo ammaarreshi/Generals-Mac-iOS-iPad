@@ -205,7 +205,7 @@ public:
 
 private:
 
-	typedef std::map< NameKeyType, ObjectCreationList, std::less<NameKeyType> > ObjectCreationListMap;
+	typedef std::map< NameKeyType, ObjectCreationList, std::less<NameKeyType>/**/> ObjectCreationListMap;
 	ObjectCreationListMap m_ocls;
 
 	// note, this list doesn't own the nuggets; all nuggets are owned by the Store.

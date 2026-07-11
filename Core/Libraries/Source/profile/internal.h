@@ -64,20 +64,24 @@ class ProfileFastCS
 		#define ts_lock _emit 0xF0
 		DASSERT(((unsigned)&nFlag % 4) == 0);
 
-		__asm mov ebx, [nFlag]
-		__asm ts_lock
-		__asm bts dword ptr [ebx], 0
-		__asm jc The_Bit_Was_Previously_Set_So_Try_Again
+		__asm {
+			mov ebx, [nFlag]
+			ts_lock
+			bts dword ptr [ebx], 0
+			jc The_Bit_Was_Previously_Set_So_Try_Again
+		}
 		return;
 
 	The_Bit_Was_Previously_Set_So_Try_Again:
     // can't use SwitchToThread() here because Win9X doesn't have it!
     if (testEvent)
 		  ::WaitForSingleObject(testEvent,1);
-		__asm mov ebx, [nFlag]
-		__asm ts_lock
-		__asm bts dword ptr [ebx], 0
-		__asm jc  The_Bit_Was_Previously_Set_So_Try_Again
+		__asm {
+			mov ebx, [nFlag]
+			ts_lock
+			bts dword ptr [ebx], 0
+			jc  The_Bit_Was_Previously_Set_So_Try_Again
+		}
 	}
 
 	void ThreadSafeClearFlag()

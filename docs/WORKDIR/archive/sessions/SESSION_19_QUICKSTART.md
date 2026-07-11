@@ -55,7 +55,7 @@ dx8wrapper.h:1304: error: 'To_Matrix4x4' was not declared
 **Investigation Steps**:
 ```bash
 # 1. Check fighter19's approach
-cd references/fighter19-dxvk-port/
+cd references/old-refs/fighter19-dxvk-port/
 grep -r "To_D3DMATRIX\|To_Matrix4x4" GeneralsMD/Code/Libraries/Source/WWVegas/WW3D2/
 
 # 2. Check for alternative names
@@ -129,7 +129,7 @@ grep -n "^#endif" GeneralsMD/Code/Libraries/Source/WWVegas/WW3D2/dx8fvf.h
 
 # Compare with fighter19
 diff -u \
-  references/fighter19-dxvk-port/GeneralsMD/Code/Libraries/Source/WWVegas/WW3D2/dx8fvf.h \
+  references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/Libraries/Source/WWVegas/WW3D2/dx8fvf.h \
   GeneralsMD/Code/Libraries/Source/WWVegas/WW3D2/dx8fvf.h
 ```
 
@@ -158,7 +158,7 @@ profile_funclevel.h:154: error: expected ';' at end of member declaration
 grep -rn "_int64" Core/Libraries/Source/profile/
 
 # Check fighter19's approach
-grep -rn "_int64\|uint64_t" references/fighter19-dxvk-port/Core/Libraries/Source/profile/
+grep -rn "_int64\|uint64_t" references/old-refs/fighter19-dxvk-port/Core/Libraries/Source/profile/
 ```
 
 **Fix Pattern**:
@@ -215,9 +215,9 @@ Core/Libraries/Source/profile/profile_funclevel.h
 
 ### Fighter19 Reference Paths
 ```
-references/fighter19-dxvk-port/GeneralsMD/Code/Libraries/Source/WWVegas/WW3D2/
-references/fighter19-dxvk-port/GeneralsMD/Code/CompatLib/
-references/fighter19-dxvk-port/Core/Libraries/Source/profile/
+references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/Libraries/Source/WWVegas/WW3D2/
+references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/CompatLib/
+references/old-refs/fighter19-dxvk-port/Core/Libraries/Source/profile/
 ```
 
 ### Build Logs

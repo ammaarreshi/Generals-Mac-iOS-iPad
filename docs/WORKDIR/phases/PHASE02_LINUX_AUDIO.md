@@ -84,13 +84,13 @@ Wire OpenAL backend to game audio system, implement audio event tracking, music 
 - [ ] Wire `cmake/audio.cmake` into main `CMakeLists.txt` under `SAGE_USE_OPENAL` guard
 
 ### Step 2: Port `OpenALAudioFileCache` (FFmpeg decoder)
-- [ ] Port `references/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/Source/OpenALAudioDevice/OpenALAudioCache.cpp`
+- [ ] Port `references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/Source/OpenALAudioDevice/OpenALAudioCache.cpp`
 - [ ] Port matching header
 - [ ] Locate `FFmpegFile` wrapper in fighter19 and port it
 - [ ] Test: load one `.wav` or `.mp3` file and print duration
 
 ### Step 3: Port `OpenALAudioStream` (music streaming)
-- [ ] Port `references/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/Source/OpenALAudioDevice/OpenALAudioStream.cpp`
+- [ ] Port `references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/Source/OpenALAudioDevice/OpenALAudioStream.cpp`
 - [ ] Port matching header
 - [ ] Minimal changes expected (91 lines, no game-specific logic)
 
@@ -113,7 +113,7 @@ Wire OpenAL backend to game audio system, implement audio event tracking, music 
 
 
 **jmarshall Reference Analysis**:
-- [ ] Study `references/jmarshall-win64-modern/Code/Audio/` structure
+- [ ] Study `references/old-refs/jmarshall-win64-modern/Code/Audio/` structure
 - [ ] Document MusicManager implementation (streaming patterns)
 - [ ] Document AudioManager event system (handle tracking)
 - [ ] Document buffer lifecycle (creation, queueing, cleanup)
@@ -380,7 +380,7 @@ Phase 2 is **COMPLETE** when:
 ## References
 
 ### Primary
-- **jmarshall OpenAL implementation**: `references/jmarshall-win64-modern/Code/Audio/`
+- **jmarshall OpenAL implementation**: `references/old-refs/jmarshall-win64-modern/Code/Audio/`
 - **OpenAL Programming Guide**: `docs/ETC/` (download if needed)
 - **Miles Sound System docs**: `docs/ETC/` (reverse-engineer if no docs available)
 

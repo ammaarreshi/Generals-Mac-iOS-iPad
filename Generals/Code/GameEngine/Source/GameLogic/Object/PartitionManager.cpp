@@ -617,7 +617,7 @@ inline Bool z_collideTest_Sphere_Nonsphere(CollideTestProc xyproc, const Collide
 		// find the radius of the slice of the sphere that is at b_bot
 		CollideInfo amod = *a;
 		amod.position.z = b_bot;
-		amod.geom.setMajorRadius((Real)sqrtf(sqr(a->geom.getMajorRadius()) - sqr(b_bot - a->position.z)));
+		amod.geom.setMajorRadius((Real)WWMath::SqrtfOrigin(sqr(a->geom.getMajorRadius()) - sqr(b_bot - a->position.z)));
 		if (xyproc(&amod, b, cinfo))
 		{
 			// if you want to have 'end' collisions, you should add something like:
@@ -635,7 +635,7 @@ inline Bool z_collideTest_Sphere_Nonsphere(CollideTestProc xyproc, const Collide
 	{
 		CollideInfo amod = *a;
 		amod.position.z = b_top;
-		amod.geom.setMajorRadius((Real)sqrtf(sqr(a->geom.getMajorRadius()) - sqr(a->position.z - b_top)));
+		amod.geom.setMajorRadius((Real)WWMath::SqrtfOrigin(sqr(a->geom.getMajorRadius()) - sqr(a->position.z - b_top)));
 		if (xyproc(&amod, b, cinfo))
 		{
 			// if you want to have 'end' collisions, you should add something like:
@@ -823,7 +823,7 @@ static Bool distCalcProc_BoundaryAndBoundary_2D(
 
 	if (totalRad > 0.0f)
 	{
-		Real actualDist = sqrtf(actualDistSqr);
+		Real actualDist = WWMath::SqrtfOrigin(actualDistSqr);
 		Real shrunkenDist = actualDist - totalRad;
 		if (shrunkenDist <= 0.0f)
 		{
@@ -911,7 +911,7 @@ static Bool distCalcProc_BoundaryAndBoundary_3D(
 	Real totalRad = (geomA?geomA->getBoundingSphereRadius():0) + (geomB?geomB->getBoundingSphereRadius():0);
 	if (totalRad > 0.0f)
 	{
-		Real actualDist = sqrtf(actualDistSqr);
+		Real actualDist = WWMath::SqrtfOrigin(actualDistSqr);
 		Real shrunkenDist = actualDist - totalRad;
 		if (shrunkenDist <= 0.0f)
 		{
@@ -2219,7 +2219,7 @@ Int PartitionData::calcMaxCoiForShape(GeometryType geom, Real majorRadius, Real 
 			}
 			case GEOMETRY_BOX:
 			{
-				Real diagonal = (Real)(sqrtf(majorRadius*majorRadius + minorRadius*minorRadius));
+				Real diagonal = (Real)(WWMath::SqrtfOrigin(majorRadius*majorRadius + minorRadius*minorRadius));
 				Int cells = ThePartitionManager->worldToCellDist(diagonal*2) + 1;
 				result = cells * cells;
 				break;
@@ -2636,7 +2636,7 @@ static void calcHeights(const Region3D& world, Real cellSize, Int x, Int y, Real
 	Real xbase = world.lo.x + (x * cellSize);
 	Real ybase = world.lo.y + (y * cellSize);
 	const Real ROUGH_STEP_SIZE = 2;	// roughly every 2 ft, please
-	Real numSteps = ceilf(cellSize / ROUGH_STEP_SIZE);
+	Real numSteps = WWMath::Ceil(cellSize / ROUGH_STEP_SIZE);
 	Real step = cellSize / numSteps;
 	loZ = HUGE_DIST;		// huge positive
 	hiZ = -HUGE_DIST;		// huge negative
@@ -3210,7 +3210,7 @@ Int PartitionManager::calcMinRadius(const ICoord2D& cur)
 	}
 
 	// double, not real
-	double dist = sqrtf(minDistSqr);
+	double dist = WWMath::SqrtfOrigin(minDistSqr);
 	Int minRadius = REAL_TO_INT_CEIL( dist / m_cellSize );
 
 	return minRadius;
@@ -3228,7 +3228,7 @@ void PartitionManager::calcRadiusVec()
 	// double, not real
 	double dx = (double)cx * (double)cellSize;
 	double dy = (double)cy * (double)cellSize;
-	double maxPossibleDist = sqrt(dx*dx + dy*dy);
+	double maxPossibleDist = WWMath::SqrtOrigin(dx*dx + dy*dy);
 
 	m_maxGcoRadius = REAL_TO_INT_CEIL(maxPossibleDist / cellSize);
 
@@ -3498,7 +3498,7 @@ Object *PartitionManager::getClosestObjects(
 	}
 	if (closestDistArg)
 	{
-		*closestDistArg = (Real)sqrtf(closestDistSqr);
+		*closestDistArg = (Real)WWMath::SqrtfOrigin(closestDistSqr);
 	}
 
 #ifdef RTS_DEBUG
@@ -3625,7 +3625,7 @@ Real PartitionManager::getRelativeAngle2D( const Object *obj, const Coord3D *pos
 	v.y = pos->y - objPos.y;
 	v.z = 0.0f;
 
-	Real dist = (Real)sqrtf(sqr(v.x) + sqr(v.y));
+	Real dist = (Real)WWMath::SqrtfOrigin(sqr(v.x) + sqr(v.y));
 
 	// normalize
 	if (dist == 0.0f)
@@ -3964,7 +3964,7 @@ Bool PartitionManager::findPositionAround( const Coord3D *center,
 	TheTerrainLogic->getMaximumPathfindExtent(&extent);
 	// If the goal is off the map, it is a scripted setup, so just
 	// use the center.
-	if (!extent.isInRegionNoZ(center)) {
+	if (!extent.isInRegionNoZ(*center)) {
 		*result = *center;
 		return true;
 	}
@@ -4556,7 +4556,7 @@ Int PartitionManager::iterateCellsBreadthFirst(const Coord3D *pos, CellBreadthFi
 //-----------------------------------------------------------------------------
 static Real calcDist2D(Real x1, Real y1, Real x2, Real y2)
 {
-	return sqrtf(sqr(x1-x2) + sqr(y1-y2));
+	return WWMath::SqrtfOrigin(sqr(x1-x2) + sqr(y1-y2));
 }
 
 //-----------------------------------------------------------------------------
@@ -5715,7 +5715,7 @@ void hLineAddThreat(Int x1, Int x2, Int y, void *threatValueParms)
 		if (x < 0 || x >= ThePartitionManager->m_cellCountX)
 			continue;
 
-		distance = sqrt( pow(x - parms->xCenter, 2) + pow(y - parms->yCenter, 2) );
+		distance = WWMath::SqrtOrigin( WWMath::PowOrigin(x - parms->xCenter, 2) + WWMath::PowOrigin(y - parms->yCenter, 2) );
 		mulVal = 1 - distance / parms->radius;
 		if (mulVal < 0.0f)
 			mulVal = 0.0f;
@@ -5743,7 +5743,7 @@ void hLineRemoveThreat(Int x1, Int x2, Int y, void *threatValueParms)
 		if (x < 0 || x >= ThePartitionManager->m_cellCountX)
 			continue;
 
-		distance = sqrt( pow(x - parms->xCenter, 2) + pow(y - parms->yCenter, 2) );
+		distance = WWMath::SqrtOrigin( WWMath::PowOrigin(x - parms->xCenter, 2) + WWMath::PowOrigin(y - parms->yCenter, 2) );
 		mulVal = 1 - distance / parms->radius;
 		if (mulVal < 0.0f)
 			mulVal = 0.0f;
@@ -5771,7 +5771,7 @@ void hLineAddValue(Int x1, Int x2, Int y, void *threatValueParms)
 		if (x < 0 || x >= ThePartitionManager->m_cellCountX)
 			continue;
 
-		distance = sqrt( pow(x - parms->xCenter, 2) + pow(y - parms->yCenter, 2) );
+		distance = WWMath::SqrtOrigin( WWMath::PowOrigin(x - parms->xCenter, 2) + WWMath::PowOrigin(y - parms->yCenter, 2) );
 		mulVal = 1 - distance / parms->radius;
 		if (mulVal < 0.0f)
 			mulVal = 0.0f;
@@ -5799,7 +5799,7 @@ void hLineRemoveValue(Int x1, Int x2, Int y, void *threatValueParms)
 		if (x < 0 || x >= ThePartitionManager->m_cellCountX)
 			continue;
 
-		distance = sqrt( pow(x - parms->xCenter, 2) + pow(y - parms->yCenter, 2) );
+		distance = WWMath::SqrtOrigin( WWMath::PowOrigin(x - parms->xCenter, 2) + WWMath::PowOrigin(y - parms->yCenter, 2) );
 		mulVal = 1 - distance / parms->radius;
 		if (mulVal < 0.0f)
 			mulVal = 0.0f;

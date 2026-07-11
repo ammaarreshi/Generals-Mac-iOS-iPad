@@ -338,7 +338,7 @@ Object* CommandButtonHuntUpdate::scanClosestTarget()
 					}
 				}
 				Real distSqr = ThePartitionManager->getDistanceSquared(me, other, FROM_BOUNDINGSPHERE_2D);
-				Real dist = sqrt(distSqr);
+				Real dist = WWMath::SqrtOrigin(distSqr);
 				Int curPriority = data->m_scanRange - dist;
 				if (info) curPriority = info->getPriority(other->getTemplate());
 				if (curPriority == 0)

@@ -600,6 +600,13 @@ static void saveOptions()
 	TheWritableGlobalData->m_useAlternateMouse = GadgetCheckBoxIsChecked(checkAlternateMouse);
 	(*pref)["UseAlternateMouse"] = TheWritableGlobalData->m_useAlternateMouse ? "yes" : "no";
 
+	// TheSuperHackers @todo Add check box ?
+	{
+		Bool useRightMouseScrollWithAlternateMouse = pref->getRightMouseScrollWithAlternateMouseEnabled();
+		(*pref)["UseRightMouseScrollWithAlternateMouse"] = useRightMouseScrollWithAlternateMouse ? "yes" : "no";
+		TheWritableGlobalData->m_useRightMouseScrollWithAlternateMouse = useRightMouseScrollWithAlternateMouse;
+	}
+
 	TheWritableGlobalData->m_clientRetaliationModeEnabled = GadgetCheckBoxIsChecked(checkRetaliation);
 	(*pref)["Retaliation"] = TheWritableGlobalData->m_clientRetaliationModeEnabled? "yes" : "no";
 
@@ -837,6 +844,16 @@ static void saveOptions()
 		prefString = show ? "yes" : "no";
 		(*pref)["ShowMoneyPerMinute"] = prefString;
 		TheWritableGlobalData->m_showMoneyPerMinute = show;
+	}
+
+	//-------------------------------------------------------------------------------------------------
+	// Set Game Window Transition Speed Multiplier
+	{
+		Real speed = pref->getGameWindowTransitionSpeedMultiplier();
+		AsciiString prefString;
+		prefString.format("%g", speed);
+		(*pref)["GameWindowTransitionSpeedMultiplier"] = prefString;
+		TheWritableGlobalData->m_gameWindowTransitionSpeedMultiplier = speed;
 	}
 
 	//-------------------------------------------------------------------------------------------------
@@ -1528,7 +1545,6 @@ WindowMsgHandledType OptionsMenuSystem( GameWindow *window, UnsignedInt msg,
 	static NameKeyType buttonAccept = NAMEKEY_INVALID;
 	static NameKeyType buttonReplayMenu = NAMEKEY_INVALID;
 	static NameKeyType buttonKeyboardOptionsMenu = NAMEKEY_INVALID;
-	static NameKeyType buttonExtrasMenu = NAMEKEY_INVALID;
 
 	switch( msg )
 	{
@@ -1542,31 +1558,6 @@ WindowMsgHandledType OptionsMenuSystem( GameWindow *window, UnsignedInt msg,
 			buttonDefaults = TheNameKeyGenerator->nameToKey( "OptionsMenu.wnd:ButtonDefaults" );
 			buttonAccept = TheNameKeyGenerator->nameToKey( "OptionsMenu.wnd:ButtonAccept" );
 			buttonKeyboardOptionsMenu = TheNameKeyGenerator->nameToKey( "OptionsMenu.wnd:ButtonKeyboardOptions" );
-
-			// GeneralsX @feature fbraz3 08/06/2026 Create Extras button dynamically
-			// (OptionsMenu.wnd in WindowZH.big has no ButtonExtras, so we add it at runtime)
-			{
-				GameWindow *backBtn = TheWindowManager->winGetWindowFromId(window, buttonBack);
-				if (backBtn) {
-					WinInstanceData instData;
-					instData.init();
-					BitSet(instData.m_style, GWS_PUSH_BUTTON | GWS_MOUSE_TRACK);
-					instData.m_textLabelString = "Extras";
-
-					GameWindow *extrasBtn = TheWindowManager->gogoGadgetPushButton(
-						backBtn->winGetParent(),
-						WIN_STATUS_ENABLED | WIN_STATUS_IMAGE,
-						320, 528,
-						145, 32,
-						&instData, nullptr, TRUE);
-
-					if (extrasBtn) {
-						buttonExtrasMenu = TheNameKeyGenerator->nameToKey("OptionsMenu.wnd:ButtonExtras");
-						extrasBtn->winSetWindowId(buttonExtrasMenu);
-						extrasBtn->winSetSystemFunc(OptionsMenuSystem);
-					}
-				}
-			}
 
 			break;
 
@@ -1685,10 +1676,6 @@ WindowMsgHandledType OptionsMenuSystem( GameWindow *window, UnsignedInt msg,
 			else if ( controlID == buttonKeyboardOptionsMenu )
 			{
 				TheShell->push( "Menus/KeyboardOptionsMenu.wnd" );
-			}
-			else if ( controlID == buttonExtrasMenu )
-			{
-				TheShell->push( "Menus/ExtrasMenu.wnd" );
 			}
 			else if(controlID == checkDrawAnchorID )
       {

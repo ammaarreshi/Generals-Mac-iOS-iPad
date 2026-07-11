@@ -18,6 +18,10 @@ on:
         required: true
         type: string
         description: "Name of the built game artifact to download (from build workflow)"
+      run-id:
+        required: false
+        type: string
+        description: "Optional workflow run ID to download artifacts from"
     secrets:
       ASSETS_KEY:
         required: true
@@ -26,6 +30,9 @@ on:
 jobs:
   replay-test-zh:
     name: ZH Replay Tests (${{ inputs.platform }})
+    # Defense in depth: callers must not run secret-dependent replay tests for
+    # pull-request code, including same-repository pull requests.
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ${{ inputs.platform == 'macos' && 'macos-latest' || 'ubuntu-latest' }}
     timeout-minutes: 45
 
@@ -39,6 +46,8 @@ jobs:
         with:
           name: ${{ inputs.game-artifact }}
           path: /tmp/game-artifact
+          run-id: ${{ inputs.run-id || github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       # -----------------------------------------------------------------------
       # 2. Platform-specific system dependencies
@@ -49,6 +58,13 @@ jobs:
           sudo apt-get update -qq
           # lavapipe: software Vulkan renderer (no GPU required in CI)
           sudo apt-get install -y -qq p7zip-full mesa-vulkan-drivers libvulkan1
+
+      - name: Cache Flatpak Runtime
+        if: inputs.platform == 'linux-flatpak'
+        uses: actions/cache@v5
+        with:
+          path: ~/.local/share/flatpak/runtime
+          key: flatpak-runtime-25.08-v1
 
       - name: Install system dependencies (Linux Flatpak)
         if: inputs.platform == 'linux-flatpak'
@@ -139,46 +155,217 @@ jobs:
           flatpak --user info com.fbraz3.GeneralsXZH
 
       # -----------------------------------------------------------------------
-      # 4. Check out and extract game assets (password-protected 7z, uses LFS)
+      # 4. Resolve, cache and decrypt retail assets
+      #
+      # Only the encrypted LFS object is cached. The cache key contains the
+      # immutable LFS SHA-256, so changed assets cannot restore a stale entry.
+      # Plaintext exists only in this trusted, ephemeral runner job.
+      # GeneralsX @build Codex 10/07/2026 Prevent plaintext retail assets from entering shared Actions caches.
       # -----------------------------------------------------------------------
-      - name: Checkout game assets repo
-        uses: actions/checkout@v6
-        with:
-          repository: fbraz3/generalsx-test-files
-          path: ci-assets-repo
-          lfs: true
+      - name: Resolve encrypted game assets revision
+        id: assets-source
+        shell: bash
+        env:
+          TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          set -euo pipefail
 
-      - name: Extract game assets (Linux)
+          if [ -z "${TARGET_BRANCH:-}" ]; then
+            TARGET_BRANCH="main"
+          fi
+
+          ASSETS_REPO_URL=""
+          ASSETS_REV=""
+          ASSETS_BRANCH=""
+
+          for candidate_url in \
+            "https://gitlab.com/fbraz3/generalsx-test-files.git" \
+            "https://github.com/fbraz3/generalsx-test-files.git"; do
+            candidate_branch="$TARGET_BRANCH"
+            candidate_rev="$(git ls-remote --heads "$candidate_url" "refs/heads/$candidate_branch" 2>/dev/null | awk 'NR == 1 { print $1 }' || true)"
+
+            if [ -z "$candidate_rev" ]; then
+              default_ref="$(git ls-remote --symref "$candidate_url" HEAD 2>/dev/null || true)"
+              candidate_branch="$(printf '%s\n' "$default_ref" | awk '$1 == "ref:" && $3 == "HEAD" { sub("refs/heads/", "", $2); print $2; exit }')"
+              candidate_rev="$(printf '%s\n' "$default_ref" | awk '$2 == "HEAD" && $1 != "ref:" { print $1; exit }')"
+            fi
+
+            if [ -n "$candidate_rev" ]; then
+              ASSETS_REPO_URL="$candidate_url"
+              ASSETS_REV="$candidate_rev"
+              ASSETS_BRANCH="$candidate_branch"
+              break
+            fi
+          done
+
+          if [ -z "$ASSETS_REPO_URL" ] || [ -z "$ASSETS_REV" ]; then
+            echo "ERROR: Unable to resolve encrypted assets from either mirror"
+            exit 1
+          fi
+
+          rm -rf "$GITHUB_WORKSPACE/ci-assets-repo"
+          git init -q "$GITHUB_WORKSPACE/ci-assets-repo"
+          git -C "$GITHUB_WORKSPACE/ci-assets-repo" remote add origin "$ASSETS_REPO_URL"
+          GIT_LFS_SKIP_SMUDGE=1 git -C "$GITHUB_WORKSPACE/ci-assets-repo" fetch --depth=1 origin "$ASSETS_REV"
+          GIT_LFS_SKIP_SMUDGE=1 git -C "$GITHUB_WORKSPACE/ci-assets-repo" checkout --detach FETCH_HEAD
+
+          ASSETS_OID="$(git -C "$GITHUB_WORKSPACE/ci-assets-repo" show HEAD:generalszh.7z | sed -n 's/^oid sha256://p')"
+          if [ "${#ASSETS_OID}" -ne 64 ]; then
+            echo "ERROR: generalszh.7z is not an expected SHA-256 Git LFS pointer"
+            exit 1
+          fi
+          case "$ASSETS_OID" in
+            *[!0-9a-f]*)
+              echo "ERROR: generalszh.7z contains an invalid Git LFS object ID"
+              exit 1
+              ;;
+          esac
+
+          echo "repo-url=$ASSETS_REPO_URL" >> "$GITHUB_OUTPUT"
+          echo "revision=$ASSETS_REV" >> "$GITHUB_OUTPUT"
+          echo "lfs-oid=$ASSETS_OID" >> "$GITHUB_OUTPUT"
+          echo "Resolved encrypted assets branch $ASSETS_BRANCH at $ASSETS_REV (LFS SHA-256 $ASSETS_OID)"
+
+      - name: Cache encrypted game assets
+        id: cache-encrypted-assets
+        uses: actions/cache@v5
+        with:
+          path: ${{ runner.temp }}/generalsx-encrypted-assets/generalszh.7z
+          key: generalsx-encrypted-assets-v1-${{ runner.os }}-${{ steps.assets-source.outputs.lfs-oid }}
+
+      - name: Download encrypted game assets
+        if: steps.cache-encrypted-assets.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SOURCE_DIR="$GITHUB_WORKSPACE/ci-assets-repo"
+          ENCRYPTED_DIR="$RUNNER_TEMP/generalsx-encrypted-assets"
+          mkdir -p "$ENCRYPTED_DIR"
+          git -C "$SOURCE_DIR" lfs install --local
+
+          if ! git -C "$SOURCE_DIR" lfs pull origin --include="generalszh.7z"; then
+            echo "Primary LFS endpoint failed; retrying the GitHub mirror"
+            git -C "$SOURCE_DIR" remote set-url origin "https://github.com/fbraz3/generalsx-test-files.git"
+            git -C "$SOURCE_DIR" lfs pull origin --include="generalszh.7z"
+          fi
+
+          cp "$SOURCE_DIR/generalszh.7z" "$ENCRYPTED_DIR/generalszh.7z"
+
+      - name: Verify encrypted game assets
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ENCRYPTED_ARCHIVE="$RUNNER_TEMP/generalsx-encrypted-assets/generalszh.7z"
+          EXPECTED_SHA256="${{ steps.assets-source.outputs.lfs-oid }}"
+          if [ ! -f "$ENCRYPTED_ARCHIVE" ]; then
+            echo "ERROR: Encrypted asset archive is missing"
+            exit 1
+          fi
+
+          ACTUAL_SHA256="$(shasum -a 256 "$ENCRYPTED_ARCHIVE" | awk '{ print $1 }')"
+          if [ "$ACTUAL_SHA256" != "$EXPECTED_SHA256" ]; then
+            echo "ERROR: Encrypted asset archive SHA-256 mismatch"
+            exit 1
+          fi
+
+      - name: Decrypt game assets for replay job
+        shell: bash
+        env:
+          ASSETS_KEY: ${{ secrets.ASSETS_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$ASSETS_KEY" ]; then
+            echo "ERROR: ASSETS_KEY is required for trusted replay jobs"
+            exit 1
+          fi
+
+          ENCRYPTED_ARCHIVE="$RUNNER_TEMP/generalsx-encrypted-assets/generalszh.7z"
+          ASSETS_DIR="$RUNNER_TEMP/generalsx-decrypted-assets"
+          rm -rf "$ASSETS_DIR"
+          mkdir -p "$ASSETS_DIR"
+          7z x "-p$ASSETS_KEY" "$ENCRYPTED_ARCHIVE" "-o$ASSETS_DIR" -y >/dev/null
+
+          if ! find "$ASSETS_DIR" -type f -name '*.big' -print -quit | grep -q .; then
+            echo "ERROR: Decrypted retail asset set contains no .big files"
+            exit 1
+          fi
+
+          echo "ASSETS_DIR=$ASSETS_DIR" >> "$GITHUB_ENV"
+
+      - name: Install game assets (Linux)
         if: inputs.platform == 'linux'
         run: |
-          # Assets go alongside the binary (flat layout matching local deploy)
-          echo "Extracting generalszh.7z into: $GAME_DIR"
-          7z x -p"${{ secrets.ASSETS_KEY }}" "$GITHUB_WORKSPACE/ci-assets-repo/generalszh.7z" -o"$GAME_DIR" -y
+          echo "Copying decrypted game assets into: $GAME_DIR"
+          cp -r "$ASSETS_DIR/." "$GAME_DIR/"
           echo "Big files found:"
-          ls "$GAME_DIR/"*.big 2>/dev/null | head -10 || echo "(none found - verify archive contents)"
+          ls "$GAME_DIR/"*.big 2>/dev/null | head -10 || echo "(none found)"
 
-      - name: Extract game assets (macOS)
+      - name: Install game assets (macOS)
         if: inputs.platform == 'macos'
         run: |
-          # Assets go into the bin/ dir alongside the binary.
-          # CNC_GENERALS_ZH_PATH env var points the game to this directory.
-          echo "Extracting generalszh.7z into: $GAME_DIR"
-          7z x -p"${{ secrets.ASSETS_KEY }}" "$GITHUB_WORKSPACE/ci-assets-repo/generalszh.7z" -o"$GAME_DIR" -y
+          echo "Copying decrypted game assets into: $GAME_DIR"
+          cp -r "$ASSETS_DIR/." "$GAME_DIR/"
           echo "Big files found:"
-          ls "$GAME_DIR/"*.big 2>/dev/null | head -10 || echo "(none found - verify archive contents)"
+          ls "$GAME_DIR/"*.big 2>/dev/null | head -10 || echo "(none found)"
 
       # -----------------------------------------------------------------------
       # 5. Check out replay repo and install maps + platform-specific replays
       #    Repo structure: GeneralsXZH/Maps/<MapFolder>/  GeneralsXZH/Replays/<platform>_*.rep
       # -----------------------------------------------------------------------
-      - name: Checkout replay files repo
-        uses: actions/checkout@v6
-        with:
-          repository: fbraz3/GeneralsXReplays
-          path: ci-replays-repo
+      - name: Clone replay files at immutable revision
+        shell: bash
+        env:
+          TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${TARGET_BRANCH:-}" ]; then
+            TARGET_BRANCH="main"
+          fi
+
+          REPLAYS_REPO_URL=""
+          REPLAYS_REV=""
+          REPLAYS_BRANCH=""
+
+          for candidate_url in \
+            "https://gitlab.com/fbraz3/generalsx-replays.git" \
+            "https://github.com/fbraz3/GeneralsXReplays.git"; do
+            candidate_branch="$TARGET_BRANCH"
+            candidate_rev="$(git ls-remote --heads "$candidate_url" "refs/heads/$candidate_branch" 2>/dev/null | awk 'NR == 1 { print $1 }' || true)"
+
+            if [ -z "$candidate_rev" ]; then
+              default_ref="$(git ls-remote --symref "$candidate_url" HEAD 2>/dev/null || true)"
+              candidate_branch="$(printf '%s\n' "$default_ref" | awk '$1 == "ref:" && $3 == "HEAD" { sub("refs/heads/", "", $2); print $2; exit }')"
+              candidate_rev="$(printf '%s\n' "$default_ref" | awk '$2 == "HEAD" && $1 != "ref:" { print $1; exit }')"
+            fi
+
+            if [ -n "$candidate_rev" ]; then
+              REPLAYS_REPO_URL="$candidate_url"
+              REPLAYS_REV="$candidate_rev"
+              REPLAYS_BRANCH="$candidate_branch"
+              break
+            fi
+          done
+
+          if [ -z "$REPLAYS_REPO_URL" ] || [ -z "$REPLAYS_REV" ]; then
+            echo "ERROR: Unable to resolve replay files from either mirror"
+            exit 1
+          fi
+
+          rm -rf "$GITHUB_WORKSPACE/ci-replays-repo"
+          git init -q "$GITHUB_WORKSPACE/ci-replays-repo"
+          git -C "$GITHUB_WORKSPACE/ci-replays-repo" remote add origin "$REPLAYS_REPO_URL"
+          git -C "$GITHUB_WORKSPACE/ci-replays-repo" fetch --depth=1 origin "$REPLAYS_REV"
+          git -C "$GITHUB_WORKSPACE/ci-replays-repo" checkout --detach FETCH_HEAD
+          echo "Resolved replay branch $REPLAYS_BRANCH at $REPLAYS_REV"
 
       - name: Set up user data directories (Linux)
         if: inputs.platform == 'linux' || inputs.platform == 'linux-flatpak'
+        env:
+          INPUT_PLATFORM: ${{ inputs.platform }}
         run: |
           USER_DATA="$HOME/.local/share/GeneralsX/GeneralsZH"
           MAPS_DIR="$USER_DATA/Maps"
@@ -192,26 +379,36 @@ jobs:
             ls -la "$MAPS_DIR/"
           fi
 
-          # Install platform-specific replays
-          REPLAY_COUNT=$(ls "$GITHUB_WORKSPACE/ci-replays-repo/GeneralsXZH/Replays"/linux_*.rep 2>/dev/null | wc -l)
+          # GeneralsX @bugfix Codex 10/07/2026 Map Flatpak to the Linux replay corpus and reject an empty platform selection.
+          case "$INPUT_PLATFORM" in
+            linux|linux-flatpak) REPLAY_PLATFORM="linux" ;;
+            *)
+              echo "::error::Unsupported Linux replay platform: $INPUT_PLATFORM"
+              exit 1
+              ;;
+          esac
+
+          shopt -s nullglob
+          REPLAY_FILES=("$GITHUB_WORKSPACE/ci-replays-repo/GeneralsXZH/Replays/${REPLAY_PLATFORM}_"*.rep)
+          REPLAY_COUNT=${#REPLAY_FILES[@]}
           if [ "$REPLAY_COUNT" -eq 0 ]; then
-            echo "WARNING: No linux_*.rep files found in replay repo"
-          else
-            cp "$GITHUB_WORKSPACE/ci-replays-repo/GeneralsXZH/Replays"/linux_*.rep "$REPLAYS_DIR/"
-            echo "Replays installed ($REPLAY_COUNT files):"
-            ls -la "$REPLAYS_DIR/"
+            echo "::error::No ${REPLAY_PLATFORM}_*.rep files found in replay repo"
+            exit 1
           fi
+          rm -f "$REPLAYS_DIR"/*.rep
+          cp "${REPLAY_FILES[@]}" "$REPLAYS_DIR/"
+          echo "Replays installed ($REPLAY_COUNT files):"
+          ls -la "$REPLAYS_DIR/"
 
           echo "USER_DATA=$USER_DATA" >> $GITHUB_ENV
 
-      - name: Extract game assets (Linux Flatpak)
+      - name: Install game assets (Linux Flatpak)
         if: inputs.platform == 'linux-flatpak'
         run: |
-          # For Flatpak replay tests assets must be in xdg-data path visible to sandbox.
-          echo "Extracting generalszh.7z into: $USER_DATA"
-          7z x -p"${{ secrets.ASSETS_KEY }}" "$GITHUB_WORKSPACE/ci-assets-repo/generalszh.7z" -o"$USER_DATA" -y
+          echo "Copying decrypted game assets into: $USER_DATA"
+          cp -r "$ASSETS_DIR/." "$USER_DATA/"
           echo "Big files found:"
-          ls "$USER_DATA/"*.big 2>/dev/null | head -10 || echo "(none found - verify archive contents)"
+          ls "$USER_DATA/"*.big 2>/dev/null | head -10 || echo "(none found)"
 
       - name: Set up user data directories (macOS)
         if: inputs.platform == 'macos'
@@ -228,15 +425,18 @@ jobs:
             ls -la "$MAPS_DIR/"
           fi
 
-          # Install platform-specific replays
-          REPLAY_COUNT=$(ls "$GITHUB_WORKSPACE/ci-replays-repo/GeneralsXZH/Replays"/macos_*.rep 2>/dev/null | wc -l)
+          # GeneralsX @bugfix Codex 10/07/2026 Run macOS only against replays recorded for its CRT behavior.
+          shopt -s nullglob
+          REPLAY_FILES=("$GITHUB_WORKSPACE/ci-replays-repo/GeneralsXZH/Replays/macos_"*.rep)
+          REPLAY_COUNT=${#REPLAY_FILES[@]}
           if [ "$REPLAY_COUNT" -eq 0 ]; then
-            echo "WARNING: No macos_*.rep files found in replay repo"
-          else
-            cp "$GITHUB_WORKSPACE/ci-replays-repo/GeneralsXZH/Replays"/macos_*.rep "$REPLAYS_DIR/"
-            echo "Replays installed ($REPLAY_COUNT files):"
-            ls -la "$REPLAYS_DIR/"
+            echo "::error::No macos_*.rep files found in replay repo"
+            exit 1
           fi
+          rm -f "$REPLAYS_DIR"/*.rep
+          cp "${REPLAY_FILES[@]}" "$REPLAYS_DIR/"
+          echo "Replays installed ($REPLAY_COUNT files):"
+          ls -la "$REPLAYS_DIR/"
 
           # Store path without spaces in GITHUB_ENV using heredoc syntax
           {
@@ -307,7 +507,8 @@ jobs:
             exit 1
           fi
           if [ $((PASS + FAIL)) -eq 0 ]; then
-            echo "::warning::No replay files were found to test"
+            echo "::error::No Linux replay files were found to test"
+            exit 1
           fi
 
       - name: Run headless replay tests (Linux Flatpak)
@@ -362,7 +563,8 @@ jobs:
             exit 1
           fi
           if [ $((PASS + FAIL)) -eq 0 ]; then
-            echo "::warning::No replay files were found to test"
+            echo "::error::No Linux Flatpak replay files were found to test"
+            exit 1
           fi
 
       - name: Run headless replay tests (macOS)
@@ -431,5 +633,12 @@ jobs:
             exit 1
           fi
           if [ $((PASS + FAIL)) -eq 0 ]; then
-            echo "::warning::No replay files were found to test"
+            echo "::error::No macOS replay files were found to test"
+            exit 1
           fi
+
+      - name: Remove decrypted retail assets
+        if: always()
+        shell: bash
+        run: |
+          rm -rf "$RUNNER_TEMP/generalsx-decrypted-assets"

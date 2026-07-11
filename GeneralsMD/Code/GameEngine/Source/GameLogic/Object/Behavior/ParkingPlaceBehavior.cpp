@@ -398,7 +398,7 @@ void ParkingPlaceBehavior::calcPPInfo( ObjectID id, PPInfo *info )
 
 		//Cache the runway's takeoff distance used by JetAIUpdate for calculating lift.
 		Coord3D vector = info->runwayStart;
-		vector.sub( &info->runwayEnd );
+		vector.sub( info->runwayEnd );
 		info->runwayTakeoffDist = vector.length();
 
 		for (std::vector<RunwayInfo>::iterator it = m_runways.begin(); it != m_runways.end(); ++it)
@@ -903,7 +903,7 @@ void ParkingPlaceBehavior::unreserveDoorForExit( ExitDoorType exitDoor )
 void ParkingPlaceBehavior::setRallyPoint( const Coord3D *pos )
 {
 	m_heliRallyPointExists = TRUE;
-	m_heliRallyPoint.set( pos );
+	m_heliRallyPoint.set( *pos );
 	// nothing
 }
 

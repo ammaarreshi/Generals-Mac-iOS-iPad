@@ -1186,7 +1186,7 @@ void W3DTreeBuffer::unitMoved(Object *unit)
 				}
 				Coord3D delta;
 				delta.set(m_trees[treeNdx].location.X, m_trees[treeNdx].location.Y, m_trees[treeNdx].location.Z );
-				delta.sub(&pos);
+				delta.sub(pos);
 				if (radius*radius>delta.lengthSqr()) {
 					bool canTopple = unit->getCrusherLevel() > 1;
 					if (canTopple && m_treeTypes[m_trees[treeNdx].treeType].m_data->m_doTopple) {
@@ -1500,7 +1500,7 @@ void W3DTreeBuffer::pushAsideTree(DrawableID id, const Coord3D *pusherPos,
 			m_trees[i].pushAsideSource = pusherID;
 			Coord3D delta;
 			delta.set(m_trees[i].location.X, m_trees[i].location.Y, m_trees[i].location.Z);
-			delta.sub(pusherPos);
+			delta.sub(*pusherPos);
 
 			if (pusherDirection->x*delta.y - pusherDirection->y*delta.x > 0.0f) {
 				m_trees[i].pushAsideCos = -pusherDirection->y;

@@ -1718,7 +1718,7 @@ void Object::reactToTransformChange(const Matrix3D* oldMtx, const Coord3D* oldPo
 
 		Region3D mapExtent;
 		TheTerrainLogic->getExtent(&mapExtent);
-		if (mapExtent.isInRegionNoZ(getPosition()))
+		if (mapExtent.isInRegionNoZ(*getPosition()))
 			m_privateStatus &= ~OFF_MAP;
 		else
 			m_privateStatus |= OFF_MAP;
@@ -2619,7 +2619,7 @@ void Object::friend_notifyOfNewMapBoundary()
 
 	Region3D mapExtent;
 	TheTerrainLogic->getExtent(&mapExtent);
-	if (mapExtent.isInRegionNoZ(getPosition()))
+	if (mapExtent.isInRegionNoZ(*getPosition()))
 		m_privateStatus &= ~OFF_MAP;
 	else
 		m_privateStatus |= OFF_MAP;
@@ -2935,7 +2935,7 @@ void Object::createVeterancyLevelFX(VeterancyLevel oldLevel, VeterancyLevel newL
 			Anim2DTemplate *animTemplate = TheAnim2DCollection->findTemplate( TheGlobalData->m_levelGainAnimationName );
 
 			Coord3D pos = *getPosition();
-			pos.add(&m_healthBoxOffset);
+			pos.add(m_healthBoxOffset);
 
 			TheInGameUI->addWorldAnimation( animTemplate,
 																			&pos,
@@ -3122,7 +3122,7 @@ void Object::getHealthBoxPosition(Coord3D& pos) const
 {
 	pos = *getPosition();
 	pos.z += getGeometryInfo().getMaxHeightAbovePosition() + 10;
-	pos.add(&m_healthBoxOffset);
+	pos.add(m_healthBoxOffset);
 
 	// this needs to get moved to the mobspawnerupdate
 	if (isKindOf(KINDOF_MOB_NEXUS)) // quicker idiot test

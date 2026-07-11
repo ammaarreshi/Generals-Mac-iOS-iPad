@@ -91,5 +91,11 @@ target_link_libraries(core_wwmath PRIVATE
     core_wwsaveload
 )
 
+if (SAGE_USE_DETERMINISTIC_MATH)
+    target_link_libraries(core_wwmath PUBLIC
+        gamemath
+    )
+endif()
+
 # @todo Test its impact and see what to do with the legacy functions.
 #add_compile_definitions(core_wwmath PUBLIC ALLOW_TEMPORARIES) # Enables legacy math with "temporaries"

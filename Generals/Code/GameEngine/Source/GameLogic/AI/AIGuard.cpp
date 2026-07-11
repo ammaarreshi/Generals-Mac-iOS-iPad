@@ -175,7 +175,13 @@ AIGuardMachine::AIGuardMachine( Object *owner ) :
 	// order matters: first state is the default state.
 // srj sez: I made "return" the start state, so that if ordered to guard a position
 // that isn't the unit's current position, it moves to that position first.
+#if RETAIL_COMPATIBLE_CRC
 	defineState( AI_GUARD_RETURN,						newInstance(AIGuardReturnState)( this ), AI_GUARD_IDLE, AI_GUARD_INNER, attackAggressors );
+#else
+	// TheSuperHackers @bugfix 09/04/2026 The attack aggressors conditions for AI_GUARD_RETURN
+	// were removed to fix the conflicting movement and fire behavior in guard mode when the unit is under attack.
+	defineState( AI_GUARD_RETURN,						newInstance(AIGuardReturnState)( this ), AI_GUARD_IDLE, AI_GUARD_INNER );
+#endif
 	defineState( AI_GUARD_IDLE,							newInstance(AIGuardIdleState)( this ), AI_GUARD_INNER, AI_GUARD_RETURN, attackAggressors );
 	defineState( AI_GUARD_INNER,						newInstance(AIGuardInnerState)( this ), AI_GUARD_OUTER, AI_GUARD_OUTER );
 	defineState( AI_GUARD_OUTER,						newInstance(AIGuardOuterState)( this ), AI_GUARD_GET_CRATE, AI_GUARD_GET_CRATE );

@@ -63,6 +63,8 @@
 
 #include "GameLogic/GameLogic.h"
 #include "GameLogic/TerrainLogic.h"
+// GeneralsX @bugfix fbraz3 24/06/2026 Save and restore FPU precision mode when calling audio manager entrypoints.
+#include "GameLogic/FPUControl.h"
 
 #include "Common/file.h"
 
@@ -140,6 +142,7 @@ OpenALAudioManager::~OpenALAudioManager()
 #if defined(_DEBUG) || defined(_INTERNAL)
 AudioHandle OpenALAudioManager::addAudioEvent(const AudioEventRTS* eventToAdd)
 {
+	ScopedFPUGuard fpuGuard;
 	if (TheGlobalData->m_preloadReport) {
 		if (!eventToAdd->getEventName().isEmpty()) {
 			m_allEventsLoaded.insert(eventToAdd->getEventName());
@@ -504,6 +507,7 @@ ALenum OpenALAudioManager::getALFormat(uint8_t channels, uint8_t bitsPerSample)
 //-------------------------------------------------------------------------------------------------
 void OpenALAudioManager::init()
 {
+	ScopedFPUGuard fpuGuard;
 	AudioManager::init();
 #ifdef INTENSE_DEBUG
 	DEBUG_LOG(("Sound has temporarily been disabled in debug builds only. jkmcd\n"));
@@ -543,6 +547,7 @@ void OpenALAudioManager::reset()
 //-------------------------------------------------------------------------------------------------
 void OpenALAudioManager::update()
 {
+	ScopedFPUGuard fpuGuard;
 	AudioManager::update();
 	setDeviceListenerPosition();
 	processRequestList();
@@ -921,7 +926,7 @@ void OpenALAudioManager::playAudioEvent(AudioEventRTS* event)
 
 			if (source) {
 				audio->m_bufferHandle = playSample3D(event, audio);
-				m_sound->notifyOf3DSampleStart();
+
 			}
 
 			if (!audio->m_bufferHandle)
@@ -981,7 +986,7 @@ void OpenALAudioManager::playAudioEvent(AudioEventRTS* event)
 
 			if (source) {
 				audio->m_bufferHandle = playSample(event, audio);
-				m_sound->notifyOf2DSampleStart();
+
 			}
 
 			if (!audio->m_bufferHandle) {
@@ -1214,12 +1219,12 @@ void OpenALAudioManager::releasePlayingAudio(PlayingAudio* release)
 	if (releaseInfo && releaseInfo->m_soundType == AT_SoundEffect) {
 		if (release->m_type == PAT_Sample) {
 			if (release->m_source) {
-				m_sound->notifyOf2DSampleCompletion();
+
 			}
 		}
 		else {
 			if (release->m_source) {
-				m_sound->notifyOf3DSampleCompletion();
+
 			}
 		}
 	}
@@ -2152,7 +2157,7 @@ Bool OpenALAudioManager::isPlayingLowerPriority(AudioEventRTS* event) const
 			if (!(*it)->m_audioEventRTS) continue; // GeneralsX @bugfix BenderAI 11/03/2026
 			const AudioEventInfo* info = (*it)->m_audioEventRTS->getAudioEventInfo();
 			if (info && info->m_priority < priority) {
-				//event->setHandleToKill((*it)->m_audioEventRTS->getPlayingHandle());
+				event->setHandleToKill((*it)->m_audioEventRTS->getPlayingHandle());
 				return true;
 			}
 		}
@@ -2163,7 +2168,7 @@ Bool OpenALAudioManager::isPlayingLowerPriority(AudioEventRTS* event) const
 			if (!(*it)->m_audioEventRTS) continue; // GeneralsX @bugfix BenderAI 11/03/2026
 			const AudioEventInfo* info = (*it)->m_audioEventRTS->getAudioEventInfo();
 			if (info && info->m_priority < priority) {
-				//event->setHandleToKill((*it)->m_audioEventRTS->getPlayingHandle());
+				event->setHandleToKill((*it)->m_audioEventRTS->getPlayingHandle());
 				return true;
 			}
 		}
@@ -2937,6 +2942,15 @@ void OpenALAudioManager::playStream(AudioEventRTS* event, OpenALAudioStream* str
 		//alSourcei(stream->getSource(), AL_LOOPING, AL_TRUE);
 	}
 
+	// GeneralsX @bugfix Mr. Meeseeks 19/06/2026 - Initialize stream volume
+	Real desiredVolume = event->getVolume() * event->getVolumeShift();
+	if (event->getAudioEventInfo() && event->getAudioEventInfo()->m_soundType == AT_Music) {
+		alSourcef(stream->getSource(), AL_GAIN, m_musicVolume * desiredVolume);
+	}
+	else {
+		alSourcef(stream->getSource(), AL_GAIN, m_speechVolume * desiredVolume);
+	}
+
 	stream->play();
 	if (event->getAudioEventInfo()->m_soundType == AT_Music) {
 		// Need to stop/fade out the old music here.
@@ -2951,6 +2965,8 @@ ALuint OpenALAudioManager::playSample(AudioEventRTS* event, PlayingAudio* audio)
 	if (bufferHandle) {
 		alSourcei(audio->m_source, AL_SOURCE_RELATIVE, AL_TRUE);
 		alSourcei(audio->m_source, AL_BUFFER, (ALuint)(uintptr_t)bufferHandle);
+		// GeneralsX @bugfix Mr. Meeseeks 19/06/2026 - Initialize sample volume
+		adjustPlayingVolume(audio);
 		alSourcePlay(audio->m_source);
 	}
 
@@ -3007,6 +3023,9 @@ ALuint OpenALAudioManager::playSample3D(AudioEventRTS* event, PlayingAudio* samp
 			}
 			alSourcei(source, AL_BUFFER, handle);
 			DEBUG_LOG(("Playing 3D sample '%s' at %f, %f, %f\n", event->getEventName().str(), x, y, z));
+
+			// GeneralsX @bugfix Mr. Meeseeks 19/06/2026 - Initialize 3D sample volume
+			adjustPlayingVolume(sample3D);
 
 			// Start playback
 			alSourcePlay(source);
@@ -3231,3 +3250,19 @@ void OpenALAudioManager::dumpAllAssetsUsed()
 	logfile = NULL;
 }
 #endif
+
+//-------------------------------------------------------------------------------------------------
+UnsignedInt OpenALAudioManager::getNumAvailable2DSamples() const
+{
+	// GeneralsX @bugfix Mr. Meeseeks 27/06/2026 Fix available samples calculation to prevent voicelines culling
+	UnsignedInt playing = (UnsignedInt)m_playingSounds.size();
+	return (m_num2DSamples > playing) ? (m_num2DSamples - playing) : 0;
+}
+
+//-------------------------------------------------------------------------------------------------
+UnsignedInt OpenALAudioManager::getNumAvailable3DSamples() const
+{
+	// GeneralsX @bugfix Mr. Meeseeks 27/06/2026 Fix available samples calculation to prevent voicelines culling
+	UnsignedInt playing = (UnsignedInt)m_playing3DSounds.size();
+	return (m_num3DSamples > playing) ? (m_num3DSamples - playing) : 0;
+}

@@ -161,7 +161,7 @@ All scripts are integrated into VS Code tasks (Cmd+Shift+P → "Tasks: Run Task"
 ```
 
 **Expected issues** (first build):
-- Missing headers (SDL3, OpenAL, DXVK)
+- Missing headers (SDL3, MiniAudio, DXVK)
 - Undefined symbols
 - Linking errors
 
@@ -183,7 +183,7 @@ Scripts support environment variables:
 
 ```bash
 # Custom Docker image
-export DOCKER_IMAGE="ubuntu:24.04"
+export DOCKER_IMAGE="ubuntu:26.04"
 ./scripts/docker-build-linux-zh.sh
 
 # Custom log directory
@@ -235,7 +235,7 @@ rm -rf build/linux64-deploy
 
 ## Phase 1 Status
 
-**Current**: Building Phase 1 (DXVK + SDL3 + OpenAL)
+**Current**: Building Phase 1 (DXVK + SDL3 + MiniAudio)
 **Status**: 70% complete (code written, NOT yet compiled)
 **Next**: First Docker build test
 

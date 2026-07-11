@@ -1169,49 +1169,53 @@ void TestWaterUpdate()
 				{
 					if (!haveStart)
 					{	mouseAnchor=screenPoint;
-						TheTacticalView->screenToTerrain( (ICoord2D *)&screenPoint, &terrainPointStart);
-						haveStart=1;
-						UnicodeString string;
-						string.format(L"Added Start");
-						TheInGameUI->message(string);
+						if (TheTacticalView->screenToTerrain( (ICoord2D *)&screenPoint, &terrainPointStart))
+						{
+							haveStart=1;
+							UnicodeString string;
+							string.format(L"Added Start");
+							TheInGameUI->message(string);
+						}
 					}
 					else
 					{
 						endPoint=screenPoint;
-						TheTacticalView->screenToTerrain( (ICoord2D *)&screenPoint, &terrainPointEnd);
-						haveEnd=1;
-						//Have enough info to add a wave now
-						track=TheWaterTracksRenderSystem->bindTrack(currentWaveType);
-						if (track)
-						{//	track->init(1.5f*MAP_XY_FACTOR,Vector2(terrainPointStart.x,terrainPointStart.y),Vector2(terrainPointEnd.x,terrainPointEnd.y),"wave256.tga");
-							//Generate valid input for the 2 points
-							Vector2 startPoint(terrainPointStart.x,terrainPointStart.y);
-							Vector2 endPoint(terrainPointEnd.x,terrainPointEnd.y);
-							Vector2 midPoint = endPoint - startPoint;
-							Vector2 m_perpDir = midPoint;
-							m_perpDir.Rotate(1.57079632679f);	//get vector perpendicular to wave motion.
-							m_perpDir.Normalize();
-							midPoint = startPoint + (midPoint)*0.5f;
-							Vector2 dirMidPoint = midPoint + m_perpDir;
+						if (TheTacticalView->screenToTerrain( (ICoord2D *)&screenPoint, &terrainPointEnd))
+						{
+							haveEnd=1;
+							//Have enough info to add a wave now
+							track=TheWaterTracksRenderSystem->bindTrack(currentWaveType);
+							if (track)
+							{//	track->init(1.5f*MAP_XY_FACTOR,Vector2(terrainPointStart.x,terrainPointStart.y),Vector2(terrainPointEnd.x,terrainPointEnd.y),"wave256.tga");
+								//Generate valid input for the 2 points
+								Vector2 startPoint(terrainPointStart.x,terrainPointStart.y);
+								Vector2 endPoint(terrainPointEnd.x,terrainPointEnd.y);
+								Vector2 midPoint = endPoint - startPoint;
+								Vector2 m_perpDir = midPoint;
+								m_perpDir.Rotate(1.57079632679f);	//get vector perpendicular to wave motion.
+								m_perpDir.Normalize();
+								midPoint = startPoint + (midPoint)*0.5f;
+								Vector2 dirMidPoint = midPoint + m_perpDir;
 
-							track->init(waveTypeInfo[currentWaveType].m_finalHeight,waveTypeInfo[currentWaveType].m_finalWidth,Vector2(midPoint.X,midPoint.Y),Vector2(dirMidPoint.X,dirMidPoint.Y),waveTypeInfo[currentWaveType].m_textureName,0);
+								track->init(waveTypeInfo[currentWaveType].m_finalHeight,waveTypeInfo[currentWaveType].m_finalWidth,Vector2(midPoint.X,midPoint.Y),Vector2(dirMidPoint.X,dirMidPoint.Y),waveTypeInfo[currentWaveType].m_textureName,0);
 
-							if (waveTypeInfo[currentWaveType].m_secondWaveTimeOffset)
-							{
-								//Add a second track slightly behind this one
-								track2=TheWaterTracksRenderSystem->bindTrack(currentWaveType);
-								if (track2)
+								if (waveTypeInfo[currentWaveType].m_secondWaveTimeOffset)
 								{
-									track2->init(waveTypeInfo[currentWaveType].m_finalHeight,waveTypeInfo[currentWaveType].m_finalWidth,Vector2(midPoint.X,midPoint.Y),Vector2(dirMidPoint.X,dirMidPoint.Y),waveTypeInfo[currentWaveType].m_textureName,waveTypeInfo[currentWaveType].m_secondWaveTimeOffset);
+									//Add a second track slightly behind this one
+									track2=TheWaterTracksRenderSystem->bindTrack(currentWaveType);
+									if (track2)
+									{
+										track2->init(waveTypeInfo[currentWaveType].m_finalHeight,waveTypeInfo[currentWaveType].m_finalWidth,Vector2(midPoint.X,midPoint.Y),Vector2(dirMidPoint.X,dirMidPoint.Y),waveTypeInfo[currentWaveType].m_textureName,waveTypeInfo[currentWaveType].m_secondWaveTimeOffset);
+									}
 								}
-							}
 
-							UnicodeString string;
-							string.format(L"Added End");
-							TheInGameUI->message(string);
+								UnicodeString string;
+								string.format(L"Added End");
+								TheInGameUI->message(string);
+							}
+							haveStart=0;	//reset for next segment
+							haveEnd=0;
 						}
-						haveStart=0;	//reset for next segment
-						haveEnd=0;
 					}
 					addPointReset=0;
 				}
@@ -1292,21 +1296,23 @@ void TestWaterUpdate()
 //			View *tacticalView = TheDisplay->getFirstView();
 //			tacticalView->worldToScreen( &m_moveHint[i].pos, &pos );
 
-			TheTacticalView->screenToTerrain( (ICoord2D *)&screenPoint, &terrainPointEnd);
-			//Check if point is within correct distance of start
-			Real xdiff=terrainPointEnd.x - terrainPointStart.x;
-			Real ydiff=terrainPointEnd.y - terrainPointStart.y;
-			if (sqrt (xdiff * xdiff + ydiff * ydiff) <= waveTypeInfo[currentWaveType].m_finalWidth)
-			{	TheDisplay->drawLine(mouseAnchor.x, mouseAnchor.y, screenPoint.x, screenPoint.y,1,0xffccccff);
-				DX8Wrapper::Invalidate_Cached_Render_States();
-				ShaderClass::Invalidate();
-			}
-
-			pauseWaves=TRUE;
+			if (TheTacticalView->screenToTerrain( (ICoord2D *)&screenPoint, &terrainPointEnd))
+			{
+				//Check if point is within correct distance of start
+				Real xdiff=terrainPointEnd.x - terrainPointStart.x;
+				Real ydiff=terrainPointEnd.y - terrainPointStart.y;
+				if (sqrt (xdiff * xdiff + ydiff * ydiff) <= waveTypeInfo[currentWaveType].m_finalWidth)
+				{	TheDisplay->drawLine(mouseAnchor.x, mouseAnchor.y, screenPoint.x, screenPoint.y,1,0xffccccff);
+					DX8Wrapper::Invalidate_Cached_Render_States();
+					ShaderClass::Invalidate();
+				}
 
 //			char buffer[64];
 //			sprintf(buffer,"\n%d,%d,%d,%d",mouseAnchor.x, mouseAnchor.y, screenPoint.x, screenPoint.y);
 //			OutputDebugString (buffer);
+			}
+
+			pauseWaves=TRUE;
 		}
 	}
 }

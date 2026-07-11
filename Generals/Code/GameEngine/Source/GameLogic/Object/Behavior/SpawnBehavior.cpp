@@ -870,7 +870,7 @@ void SpawnBehavior::computeAggregateStates()
 
 			spawnWeaponBonus = currentSpawn->getWeaponBonusCondition();
 
-			avgSpawnPos.add(currentSpawn->getPosition());
+			avgSpawnPos.add(*currentSpawn->getPosition());
 
 			BodyModuleInterface *body = currentSpawn->getBodyModule();
 			acrHealth    += body->getHealth();
@@ -942,7 +942,7 @@ void SpawnBehavior::computeAggregateStates()
 	// HEALTH BOX POSITION *****************************
 	// pick a centered, average spot to draw the health box
 	avgSpawnPos.scale(1.0f / spawnCount);
-	avgSpawnPos.sub(obj->getPosition());
+	avgSpawnPos.sub(*obj->getPosition());
 	obj->setHealthBoxOffset(avgSpawnPos);
 
 

@@ -190,14 +190,9 @@ export LD_LIBRARY_PATH="${SCRIPT_DIR}:${LD_LIBRARY_PATH:-}"
 # Set DXVK environment
 export DXVK_WSI_DRIVER="SDL3"
 export DXVK_LOG_LEVEL="${DXVK_LOG_LEVEL:-info}"
-# DXVK HUD: SagePatch builds default to "fps" so casual users see frame rate
-# without extra config. Set DXVK_HUD=0 explicitly to disable, or anything else
-# (e.g. fps,memory,version) to customize. See DXVK docs for full list.
-if [[ -f "${SCRIPT_DIR}/libsage_patch.so" && "${SAGE_PATCH_DISABLED:-0}" != "1" ]]; then
-    export DXVK_HUD="${DXVK_HUD:-fps}"
-else
-    export DXVK_HUD="${DXVK_HUD:-0}"
-fi
+# DXVK HUD is disabled by default because Generals has a native FPS counter.
+# Set DXVK_HUD=fps,memory,version or similar to customize. See DXVK docs for full list.
+export DXVK_HUD="${DXVK_HUD:-0}"
 
 # SagePatch (optional QoL features). Loaded via LD_PRELOAD so it can interpose
 # SDL3 functions for hot-keys (F11 screenshot, Scroll Lock cursor lock,

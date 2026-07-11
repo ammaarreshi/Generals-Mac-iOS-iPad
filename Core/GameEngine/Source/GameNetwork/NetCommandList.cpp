@@ -122,6 +122,18 @@ void NetCommandList::reset() {
 	m_lastMessageInserted = nullptr;
 }
 
+static bool isCommandIdNewer(UnsignedShort newVal, UnsignedShort oldVal)
+{
+#if RETAIL_COMPATIBLE_NETWORKING
+	return newVal > oldVal;
+#else
+	// TheSuperHackers @bugfix Caball009 14/06/2026 Ensure messages are sorted
+	// chronologically by including a command id overflow check.
+	const UnsignedShort diff = newVal - oldVal;
+	return diff != 0 && diff < 0x8000;
+#endif
+}
+
 /**
  * Insert sorts msg.  Assumes that all the previous message inserts were done using this function.
  * The message is sorted in based first on command type, then player id, and then command id.
@@ -151,10 +163,10 @@ NetCommandRef * NetCommandList::addMessage(NetCommandMsg *cmdMsg) {
 		NetCommandRef *theNext = m_lastMessageInserted->getNext();
 		if ((m_lastMessageInserted->getCommand()->getNetCommandType() == msg->getCommand()->getNetCommandType()) &&
 			(m_lastMessageInserted->getCommand()->getPlayerID() == msg->getCommand()->getPlayerID()) &&
-			(m_lastMessageInserted->getCommand()->getID() < msg->getCommand()->getID()) &&
+			isCommandIdNewer(msg->getCommand()->getID(), m_lastMessageInserted->getCommand()->getID()) &&
 			((theNext == nullptr) || ((theNext->getCommand()->getNetCommandType() > msg->getCommand()->getNetCommandType()) ||
 			 (theNext->getCommand()->getPlayerID() > msg->getCommand()->getPlayerID()) ||
-			 (theNext->getCommand()->getID() > msg->getCommand()->getID())))) {
+			 isCommandIdNewer(theNext->getCommand()->getID(), msg->getCommand()->getID())))) {
 
 			// Make sure this command isn't already in the list.
 			if (isEqualCommandMsg(m_lastMessageInserted->getCommand(), msg->getCommand())) {
@@ -275,7 +287,10 @@ NetCommandRef * NetCommandList::addMessage(NetCommandMsg *cmdMsg) {
 
 	// Find the position within the player's section based on the command ID.
 	// If the command type doesn't require a command ID, sort by whatever it should be sorted by.
-	while ((tempmsg != nullptr) && (msg->getCommand()->getNetCommandType() == tempmsg->getCommand()->getNetCommandType()) && (msg->getCommand()->getPlayerID() == tempmsg->getCommand()->getPlayerID()) && (msg->getCommand()->getSortNumber() > tempmsg->getCommand()->getSortNumber())) {
+	while (tempmsg != nullptr
+		&& msg->getCommand()->getNetCommandType() == tempmsg->getCommand()->getNetCommandType()
+		&& msg->getCommand()->getPlayerID() == tempmsg->getCommand()->getPlayerID()
+		&& isCommandIdNewer(msg->getCommand()->getSortNumber(), tempmsg->getCommand()->getSortNumber())) {
 		tempmsg = tempmsg->getNext();
 	}
 

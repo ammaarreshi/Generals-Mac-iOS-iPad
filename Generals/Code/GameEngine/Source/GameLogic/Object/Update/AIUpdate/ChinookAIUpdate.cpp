@@ -159,7 +159,7 @@ public:
 		Region3D terrainExtent;
 		TheTerrainLogic->getExtent( &terrainExtent );
 		const Real FUDGE = 1.2f;
-		Real HUGE_DIST = FUDGE * sqrt(sqr(terrainExtent.hi.x - terrainExtent.lo.x) + sqr(terrainExtent.hi.y - terrainExtent.lo.y));
+		Real HUGE_DIST = FUDGE * WWMath::SqrtOrigin(sqr(terrainExtent.hi.x - terrainExtent.lo.x) + sqr(terrainExtent.hi.y - terrainExtent.lo.y));
 
 		exitCoord.x += dir->x * HUGE_DIST;
 		exitCoord.y += dir->y * HUGE_DIST;
@@ -176,7 +176,7 @@ public:
 
 		Region3D mapRegion;
 		TheTerrainLogic->getExtentIncludingBorder( &mapRegion );
-		if (!mapRegion.isInRegionNoZ( owner->getPosition() ))
+		if (!mapRegion.isInRegionNoZ( *owner->getPosition() ))
 		{
 			TheGameLogic->destroyObject(owner);
 			return STATE_SUCCESS;
@@ -900,7 +900,7 @@ ChinookAIUpdate::~ChinookAIUpdate()
 static ParkingPlaceBehaviorInterface* getPP(ObjectID id)
 {
 	Object* airfield = TheGameLogic->findObjectByID( id );
-	if (airfield == nullptr || airfield->isEffectivelyDead() || !airfield->isKindOf(KINDOF_AIRFIELD))
+	if (airfield == nullptr || airfield->isEffectivelyDead() || !airfield->isKindOf(KINDOF_FS_AIRFIELD))
 		return nullptr;
 
 	ParkingPlaceBehaviorInterface* pp = nullptr;

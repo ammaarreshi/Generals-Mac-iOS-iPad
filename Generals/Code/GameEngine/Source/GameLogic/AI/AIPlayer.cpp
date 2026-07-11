@@ -646,7 +646,7 @@ Object *AIPlayer::buildStructureWithDozer(const ThingTemplate *bldgPlan, BuildLi
 		dx = dozer->getPosition()->x - pos.x;
 		dy = dozer->getPosition()->y - pos.y;
 
-		Int count = sqrt(dx*dx+dy*dy)/(PATHFIND_CELL_SIZE_F/2);
+		Int count = WWMath::SqrtOrigin(dx*dx+dy*dy)/(PATHFIND_CELL_SIZE_F/2);
 		if (count<2) count = 2;
 		Int i;
 		color.green = 1;
@@ -1251,7 +1251,7 @@ Int AIPlayer::getPlayerSuperweaponValue(Coord3D *center, Int playerNdx, Real rad
 				Real dx = center->x - pos.x;
 				Real dy = center->y - pos.y;
 				if (dx*dx+dy*dy<radSqr) {
-					Real dist = sqrt(dx*dx+dy*dy);
+					Real dist = WWMath::SqrtOrigin(dx*dx+dy*dy);
 					Real factor = 1.0f - (dist/(2*radius)); // 1.0 in center, 0.5 on edges.
 					Real value = pObj->getTemplate()->calcCostToBuild(pPlayer);
 					if (pObj->isKindOf(KINDOF_COMMANDCENTER)) {
@@ -2812,7 +2812,7 @@ void AIPlayer::computeCenterAndRadiusOfBase(Coord3D *center, Real *radius)
 		Real radSqr = dx*dx+dy*dy;
 		if (radSqr>maxRadSqr) maxRadSqr=radSqr;
 	}
-	*radius = sqrt(maxRadSqr);
+	*radius = WWMath::SqrtOrigin(maxRadSqr);
 }
 
 //----------------------------------------------------------------------------------------------------------

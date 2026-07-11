@@ -265,8 +265,8 @@ m=To_Matrix4x4(render_state.world);     // D3DMATRIX → Matrix4x4
 **Investigation Required**:
 ```bash
 # Check fighter19's approach
-grep -r "To_D3DMATRIX\|To_Matrix4x4" references/fighter19-dxvk-port/
-grep -r "Matrix4x4.*D3DMATRIX\|D3DMATRIX.*Matrix4x4" references/fighter19-dxvk-port/
+grep -r "To_D3DMATRIX\|To_Matrix4x4" references/old-refs/fighter19-dxvk-port/
+grep -r "Matrix4x4.*D3DMATRIX\|D3DMATRIX.*Matrix4x4" references/old-refs/fighter19-dxvk-port/
 ```
 
 #### Blocker 2: Unterminated Preprocessor Directive
@@ -807,7 +807,7 @@ rm -rf build/linux64-deploy/GeneralsMD/Code/Main/
 
 ## References
 
-**Pattern Source**: fighter19 DXVK port (`references/fighter19-dxvk-port/`)
+**Pattern Source**: fighter19 DXVK port (`references/old-refs/fighter19-dxvk-port/`)
 - SDL3 integration patterns
 - Ring buffer architecture
 - Factory conditional compilation
@@ -817,7 +817,7 @@ rm -rf build/linux64-deploy/GeneralsMD/Code/Main/
 - Event translation patterns
 - Click detection algorithms
 
-**CMake Patterns**: TheSuperHackers upstream (`references/thesuperhackers-main/`)
+**CMake Patterns**: TheSuperHackers upstream (`references/old-refs/thesuperhackers-main/`)
 - Conditional source compilation
 - Platform detection
 - Library target configuration

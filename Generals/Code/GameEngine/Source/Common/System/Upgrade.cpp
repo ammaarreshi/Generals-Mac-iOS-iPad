@@ -30,7 +30,6 @@
 // USER INCLUDES //////////////////////////////////////////////////////////////////////////////////
 #include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
-#define DEFINE_UPGRADE_TYPE_NAMES
 #define DEFINE_VETERANCY_NAMES
 #include "Common/Upgrade.h"
 #include "Common/Player.h"
@@ -123,6 +122,7 @@ const FieldParse UpgradeTemplate::m_upgradeFieldParseTable[] =
 	{ "ButtonImage",				INI::parseAsciiString,		nullptr, offsetof( UpgradeTemplate, m_buttonImageName ) },
 	{ "ResearchSound",			INI::parseAudioEventRTS,	nullptr, offsetof( UpgradeTemplate, m_researchSound ) },
 	{ "UnitSpecificSound",	INI::parseAudioEventRTS,	nullptr, offsetof( UpgradeTemplate, m_unitSpecificSound ) },
+	{ "AcademyClassify",		INI::parseIndexList,			TheAcademyClassificationTypeNames, offsetof( UpgradeTemplate, m_academyClassificationType ) },
 	{ nullptr,						nullptr,												 nullptr, 0 }
 
 };
@@ -138,6 +138,7 @@ UpgradeTemplate::UpgradeTemplate()
 	m_next = nullptr;
 	m_prev = nullptr;
 	m_buttonImage = nullptr;
+	m_academyClassificationType = ACT_NONE;
 
 }
 
@@ -153,7 +154,7 @@ UpgradeTemplate::~UpgradeTemplate()
 //-------------------------------------------------------------------------------------------------
 Int UpgradeTemplate::calcTimeToBuild( Player *player ) const
 {
-#if defined(RTS_DEBUG)
+#if defined(RTS_DEBUG) || defined(_ALLOW_DEBUG_CHEATS_IN_RELEASE)
 	if( player->buildsInstantly() )
 	{
 		return 1;

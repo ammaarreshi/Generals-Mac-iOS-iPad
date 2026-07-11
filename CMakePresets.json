@@ -206,6 +206,29 @@
                 "SAGE_USE_DX8": "OFF",
                 "SAGE_USE_SDL3": "ON",
                 "SAGE_USE_OPENAL": "ON",
+                "SAGE_USE_MINIAUDIO": "OFF",
+                "SAGE_USE_DETERMINISTIC_MATH": "OFF",
+                "SAGE_USE_GLM": "ON",
+                "SAGE_UPDATE_CHECK": "ON",
+                "RTS_CRASHDUMP_ENABLE": "OFF",
+                "RTS_BUILD_OPTION_FFMPEG": "ON"
+            }
+        },
+        {
+            "name": "linux64-openal",
+            "displayName": "Linux 64-bit DXVK/SDL3/OpenAL Release (Legacy)",
+            "inherits": "default-vcpkg",
+            "generator": "Ninja",
+            "hidden": false,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "SAGE_USE_DX8": "OFF",
+                "SAGE_USE_SDL3": "ON",
+                "SAGE_USE_OPENAL": "ON",
+                "SAGE_USE_MINIAUDIO": "OFF",
+                "SAGE_USE_DETERMINISTIC_MATH": "OFF",
                 "SAGE_USE_GLM": "ON",
                 "SAGE_UPDATE_CHECK": "ON",
                 "RTS_CRASHDUMP_ENABLE": "OFF",
@@ -228,6 +251,8 @@
                 "SAGE_USE_DX8": "OFF",
                 "SAGE_USE_SDL3": "ON",
                 "SAGE_USE_OPENAL": "ON",
+                "SAGE_USE_MINIAUDIO": "OFF",
+                "SAGE_USE_DETERMINISTIC_MATH": "OFF",
                 "SAGE_USE_GLM": "ON",
                 "SAGE_USE_MOLTENVK": "ON",
                 "SAGE_UPDATE_CHECK": "ON",
@@ -239,6 +264,19 @@
                 "PKG_CONFIG_PATH": "/opt/homebrew/lib/pkgconfig"
             },
             "description": "Phase 5 macOS port: arm64 native (Apple Silicon) with MoltenVK for graphics, SDL3 for windowing, OpenAL for audio. Universal binary deferred until all dylib deps have fat versions."
+        },
+        {
+            "name": "macos-miniaudio",
+            "displayName": "macOS (MoltenVK + SDL3 + MiniAudio) arm64 Native",
+            "inherits": "macos-vulkan",
+            "generator": "Ninja",
+            "hidden": false,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "SAGE_USE_OPENAL": "OFF",
+                "SAGE_USE_MINIAUDIO": "ON"
+            },
+            "description": "Experimental: macOS build with the MiniAudio backend while preserving the primary MoltenVK/DXVK configuration."
         },
         {
             "name": "ios-vulkan",
@@ -259,6 +297,8 @@
                 "SAGE_USE_DX8": "OFF",
                 "SAGE_USE_SDL3": "ON",
                 "SAGE_USE_OPENAL": "ON",
+                "SAGE_USE_MINIAUDIO": "OFF",
+                "SAGE_USE_DETERMINISTIC_MATH": "OFF",
                 "SAGE_USE_GLM": "ON",
                 "SAGE_USE_MOLTENVK": "ON",
                 "SAGE_DXVK_USE_LOCAL_FORK": "ON",
@@ -278,6 +318,19 @@
             "environment": {
                 "PKG_CONFIG_PATH": ""
             }
+        },
+        {
+            "name": "linux64-miniaudio",
+            "displayName": "Linux 64-bit DXVK/SDL3/MiniAudio Release",
+            "inherits": "linux64-deploy",
+            "generator": "Ninja",
+            "hidden": false,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "SAGE_USE_OPENAL": "OFF",
+                "SAGE_USE_MINIAUDIO": "ON"
+            },
+            "description": "Experimental: Linux build with miniaudio audio backend instead of OpenAL+FFmpeg. Single-header library for audio playback/capture."
         }
     ],
     "buildPresets": [
@@ -383,6 +436,18 @@
             "configurePreset": "linux64-deploy",
             "displayName": "Build Linux 64-bit DXVK/SDL3/OpenAL Release",
             "description": "Build Linux 64-bit with DXVK graphics, SDL3 windowing, and OpenAL audio"
+        },
+        {
+            "name": "linux64-openal",
+            "configurePreset": "linux64-openal",
+            "displayName": "Build Linux 64-bit DXVK/SDL3/OpenAL Release (Legacy)",
+            "description": "Build Linux 64-bit with DXVK graphics, SDL3 windowing, and OpenAL audio (legacy)"
+        },
+        {
+            "name": "linux64-miniaudio",
+            "configurePreset": "linux64-miniaudio",
+            "displayName": "Build Linux 64-bit DXVK/SDL3/MiniAudio Release",
+            "description": "Build Linux 64-bit with DXVK graphics, SDL3 windowing, and MiniAudio audio (experimental)"
         }
     ],
     "workflowPresets": [

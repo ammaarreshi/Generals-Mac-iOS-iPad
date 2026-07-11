@@ -418,7 +418,7 @@ void NeutronMissileUpdate::doAttack()
 	pos.z += m_vel.z;
 
 //DEBUG_LOG(("vel %f accel %f z %f",m_vel.length(),m_accel.length(), pos.z));
-//Real vm = sqrt(m_vel.x*m_vel.x+m_vel.y*m_vel.y+m_vel.z*m_vel.z);
+//Real vm = WWMath::SqrtOrigin(m_vel.x*m_vel.x+m_vel.y*m_vel.y+m_vel.z*m_vel.z);
 //DEBUG_LOG(("vel is %f %f %f (%f)",m_vel.x,m_vel.y,m_vel.z,vm));
 	getObject()->setTransformMatrix( &mx );
 	getObject()->setPosition( &pos );
@@ -512,7 +512,7 @@ UpdateSleepTime NeutronMissileUpdate::update()
 	if (m_noTurnDistLeft > 0.0f && oldPosValid)
 	{
 		Coord3D newPos = *getObject()->getPosition();
-		Real distThisTurn = sqrt(sqr(newPos.x-oldPos.x) + sqr(newPos.y-oldPos.y) + sqr(newPos.z-oldPos.z));
+		Real distThisTurn = WWMath::SqrtOrigin(sqr(newPos.x-oldPos.x) + sqr(newPos.y-oldPos.y) + sqr(newPos.z-oldPos.z));
 		//DEBUG_LOG(("noTurnDist goes from %f to %f",m_noTurnDistLeft,m_noTurnDistLeft-distThisTurn));
 		m_noTurnDistLeft -= distThisTurn;
 	}

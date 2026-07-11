@@ -1,8 +1,8 @@
 # Phase 1: fighter19 DXVK Port vs GeneralsX - Rendering Diff Analysis
 
-**Status**: Complete  
-**Goal**: Diagnose magenta screen (0xFF00FF) on main menu — menu text renders but no 3D terrain/objects appear  
-**Scope**: 8 investigation areas comparing `references/fighter19-dxvk-port/` (working Linux build) with our codebase  
+**Status**: Complete
+**Goal**: Diagnose magenta screen (0xFF00FF) on main menu — menu text renders but no 3D terrain/objects appear
+**Scope**: 8 investigation areas comparing `references/old-refs/fighter19-dxvk-port/` (working Linux build) with our codebase
 
 ---
 
@@ -83,7 +83,7 @@ Delete lines 1033-1039 entirely. The display is already drawn via the `GameClien
 ## Finding 2: HIGH — FramePacer Replaces Original Frame-Rate Limiter
 
 ### Location
-[GameEngine.cpp](GeneralsMD/Code/GameEngine/Source/Common/GameEngine.cpp#L930-L950) (update method)  
+[GameEngine.cpp](GeneralsMD/Code/GameEngine/Source/Common/GameEngine.cpp#L930-L950) (update method)
 [GameEngine.cpp](GeneralsMD/Code/GameEngine/Source/Common/GameEngine.cpp#L1030) (execute method)
 
 ### What We Have
@@ -146,9 +146,9 @@ This could cause the display to draw the same initial frame repeatedly — which
 ## Finding 3: HIGH — Headless Guards Gate All Rendering Initialization
 
 ### Location
-[W3DDisplay.cpp](GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/W3DDisplay.cpp#L656) — Scene creation  
-[W3DDisplay.cpp](GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/W3DDisplay.cpp#L711) — WW3D::Init + Set_Render_Device  
-[W3DDisplay.cpp](GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/W3DDisplay.cpp#L848) — init2DScene, init3DScene, W3DShaderManager  
+[W3DDisplay.cpp](GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/W3DDisplay.cpp#L656) — Scene creation
+[W3DDisplay.cpp](GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/W3DDisplay.cpp#L711) — WW3D::Init + Set_Render_Device
+[W3DDisplay.cpp](GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/W3DDisplay.cpp#L848) — init2DScene, init3DScene, W3DShaderManager
 
 ### What We Have
 ```cpp

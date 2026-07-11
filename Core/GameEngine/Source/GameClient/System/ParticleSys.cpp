@@ -1518,8 +1518,8 @@ const Coord3D *ParticleSystem::computeParticleVelocity( const Coord3D *pos )
 					up.x = 0.0;
 					up.y = 0.0;
 					up.z = 1.0;
-					perp.crossProduct( &up, &along, &perp );
-					up.crossProduct( &along, &perp, &up );
+					perp.crossProduct( up, along, perp );
+					up.crossProduct( along, perp, up );
 
 					// "speed" is in 'horizontal' plane, and "otherSpeed" is 'vertical'
 					newVel.x = speed * perp.x + otherSpeed * up.x;

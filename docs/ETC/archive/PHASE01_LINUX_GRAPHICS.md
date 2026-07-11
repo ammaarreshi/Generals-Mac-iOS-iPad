@@ -131,7 +131,7 @@ Phase 1 is **COMPLETE** when:
 
 ## Reference Materials
 
-- fighter19 DXVK integration: `references/fighter19-dxvk-port/`
+- fighter19 DXVK integration: `references/old-refs/fighter19-dxvk-port/`
 - Phase 0 analysis: `docs/WORKDIR/support/phase0-fighter19-analysis.md`
 - Platform abstraction design: `docs/WORKDIR/support/phase0-platform-abstraction.md`
 

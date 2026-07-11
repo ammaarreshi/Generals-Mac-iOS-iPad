@@ -59,7 +59,8 @@
 #endif
 #include "GameLogic/SidesList.h"
 #include "GameNetwork/NetworkDefs.h"
-
+#include "GameNetwork/GameInfo.h"
+#include <algorithm>
 
 //-----------------------------------------------------------------------------
 /*extern*/ PlayerList *ThePlayerList = nullptr;
@@ -69,9 +70,10 @@ PlayerList::PlayerList() :
 	m_local(nullptr),
 	m_playerCount(0)
 {
-	// we only allocate a few of these, so don't bother pooling 'em
 	for (Int i = 0; i < MAX_PLAYER_COUNT; i++)
+	{
 		m_players[ i ] = NEW Player( i );
+	}
 	init();
 }
 
@@ -241,6 +243,8 @@ void PlayerList::newGame()
 		p->setDefaultTeam();
 	}
 
+	// GeneralsX @bugfix felipebraz 05/07/2026 Pre-compute the network slot to player mapping
+	resolveSlotIndices();
 }
 
 //-----------------------------------------------------------------------------
@@ -251,6 +255,8 @@ void PlayerList::init()
 
 	for (int i = 1; i < MAX_PLAYER_COUNT; i++)
 		m_players[i]->init(nullptr);
+
+	std::fill(m_slotIndices, m_slotIndices + MAX_PLAYER_COUNT, -1);
 
 	// call setLocalPlayer so that becomingLocalPlayer() gets called appropriately
 	setLocalPlayer(m_players[0]);
@@ -494,6 +500,51 @@ void PlayerList::xfer( Xfer *xfer )
 // ------------------------------------------------------------------------------------------------
 void PlayerList::loadPostProcess()
 {
+	// GeneralsX @bugfix GitHubCopilot 10/07/2026 Invalidate the transient slot map with its signed sentinel after loading.
+	std::fill(m_slotIndices, m_slotIndices + ARRAY_SIZE(m_slotIndices), -1);
+}
 
+//-----------------------------------------------------------------------------
+void PlayerList::setSlotIndex(Int playerIndex, Int slotIndex)
+{
+	if (playerIndex >= 0 && playerIndex < ARRAY_SIZE(m_slotIndices))
+	{
+		m_slotIndices[playerIndex] = slotIndex;
+	}
+}
+
+//-----------------------------------------------------------------------------
+Int PlayerList::getSlotIndex(Int playerIndex) const
+{
+	if (playerIndex >= 0 && playerIndex < ARRAY_SIZE(m_slotIndices))
+	{
+		return m_slotIndices[playerIndex];
+	}
+
+	return -1;
+}
+
+//-----------------------------------------------------------------------------
+void PlayerList::resolveSlotIndices()
+{
+	if (!TheGameInfo)
+		return;
+
+	AsciiString playerName;
+
+	for (Int i = 0; i < MAX_SLOTS; ++i)
+	{
+		const GameSlot* slot = TheGameInfo->getSlot(i);
+		if (!slot || !slot->isOccupied())
+			continue;
+
+		playerName.format("player%d", i);
+
+		Player* player = findPlayerWithNameKey(TheNameKeyGenerator->nameToKey(playerName));
+		if (player)
+		{
+			setSlotIndex(player->getPlayerIndex(), i);
+		}
+	}
 }
 

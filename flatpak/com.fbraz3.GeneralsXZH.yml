@@ -65,7 +65,8 @@ modules:
           -DFETCHCONTENT_SOURCE_DIR_SDL3_IMAGE=/run/build/generalsxzh/sdl3-image-src \
           -DFETCHCONTENT_SOURCE_DIR_OPENAL_SOFT=/run/build/generalsxzh/openal-soft-src \
           -DFETCHCONTENT_SOURCE_DIR_GAMESPY=/run/build/generalsxzh/gamespy-src \
-          -DFETCHCONTENT_SOURCE_DIR_LZHL=/run/build/generalsxzh/lzhl-src/CompLibHeader
+          -DFETCHCONTENT_SOURCE_DIR_LZHL=/run/build/generalsxzh/lzhl-src/CompLibHeader \
+          -DFETCHCONTENT_SOURCE_DIR_GAMEMATH=/run/build/generalsxzh/gamemath-src
       - cmake --build build-flatpak --target z_generals -j "${FLATPAK_BUILDER_N_JOBS:-4}"
       - cmake --build build-flatpak --target sage_patch -j "${FLATPAK_BUILDER_N_JOBS:-4}" || true
       - install -Dm755 build-flatpak/GeneralsMD/GeneralsXZH /app/bin/GeneralsXZH
@@ -109,18 +110,17 @@ modules:
 
         # SagePatch (optional QoL: F11 screenshot, Scroll Lock cursor lock,
         # Ctrl+PgUp/Dn brightness, Ctrl+1..5 window snap). Loaded via LD_PRELOAD
-        # only if the .so is present in /app/lib. Default DXVK_HUD to "fps" when
-        # SagePatch is active so casual users see a frame counter.
+        # only if the .so is present in /app/lib.
         if [[ -f /app/lib/libsage_patch.so && "${SAGE_PATCH_DISABLED:-0}" != "1" ]]; then
           if [[ -n "${LD_PRELOAD:-}" ]]; then
             export LD_PRELOAD="/app/lib/libsage_patch.so:${LD_PRELOAD}"
           else
             export LD_PRELOAD="/app/lib/libsage_patch.so"
           fi
-          export DXVK_HUD="${DXVK_HUD:-fps}"
-        else
-          export DXVK_HUD="${DXVK_HUD:-0}"
         fi
+
+        # DXVK HUD is disabled by default because Generals has a native FPS counter.
+        export DXVK_HUD="${DXVK_HUD:-0}"
 
         # Keep Vulkan ICD selection to the runtime/driver defaults unless user explicitly overrides.
 
@@ -188,3 +188,7 @@ modules:
         url: https://github.com/TheSuperHackers/lzhl-1.0
         commit: dfd96e2ca64adaddb35dd4ebadd6add7d5586783
         dest: lzhl-src/CompLibHeader
+      - type: git
+        url: https://github.com/TheSuperHackers/GameMath.git
+        commit: 59f7ccd494f7e7c916a784ac26ef266f9f09d78d
+        dest: gamemath-src

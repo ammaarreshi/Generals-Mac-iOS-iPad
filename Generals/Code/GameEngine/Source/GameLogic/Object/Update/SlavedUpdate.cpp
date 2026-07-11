@@ -292,19 +292,19 @@ void SlavedUpdate::doAttackLogic( const Object *target )
 	{
 		//The distance is too far, so calculate the best allowable position.
 		Coord3D vector;
-		vector.set( targetPos );
-		vector.sub( master->getPosition() );
+		vector.set( *targetPos );
+		vector.sub( *master->getPosition() );
 		vector.normalize();
 		vector.scale( data->m_attackRange );
 
 		//Now that we have calculated the vector relative to me, add it to my position to get my goal.
-		attackPosition.set( master->getPosition() );
-		attackPosition.add( &vector );
+		attackPosition.set( *master->getPosition() );
+		attackPosition.add( vector );
 	}
 	else
 	{
 		//We are close enough, so use the target position -- easy!
-		attackPosition.set( targetPos );
+		attackPosition.set( *targetPos );
 	}
 
 	//Finally, if we have a wander distance, then randomly select a point within
@@ -355,19 +355,19 @@ void SlavedUpdate::doScoutLogic( const Coord3D *mastersDestination )
 	{
 		//The distance is too far, so calculate the best allowable position.
 		Coord3D vector;
-		vector.set( mastersDestination );
-		vector.sub( master->getPosition() );
+		vector.set( *mastersDestination );
+		vector.sub( *master->getPosition() );
 		vector.normalize();
 		vector.scale( data->m_scoutRange );
 
 		//Now that we have calculated the vector relative to me, add it to my position to get my goal.
-		scoutPosition.set( master->getPosition() );
-		scoutPosition.add( &vector );
+		scoutPosition.set( *master->getPosition() );
+		scoutPosition.add( vector );
 	}
 	else
 	{
 		//We are close enough, so use the target position -- easy!
-		scoutPosition.set( mastersDestination );
+		scoutPosition.set( *mastersDestination );
 	}
 
 	//Finally, if we have a wander distance, then randomly select a point within
@@ -478,7 +478,7 @@ void SlavedUpdate::doRepairLogic()
 			locomotor->setUsePreciseZPos( closeEnoughForZPrecision );
 		}
 		Coord3D pos;
-		pos.set( master->getPosition() );
+		pos.set( *master->getPosition() );
 		Real altitude = GameLogicRandomValueReal( data->m_repairMinAltitude, data->m_repairMaxAltitude );
 		pos.z += altitude;
 		ai->aiMoveToPosition( &pos, CMD_FROM_AI );
@@ -625,11 +625,11 @@ void SlavedUpdate::setRepairState( RepairStates repairState )
 							//Get the bone position
 							if( draw->getPristineBonePositions( data->m_weldingFXBone.str(), 0, &pos, nullptr, 1 ) )
 							{
-								pos.add( obj->getPosition() );
+								pos.add( *obj->getPosition() );
 							}
 							else
 							{
-								pos.set( obj->getPosition() );
+								pos.set( *obj->getPosition() );
 							}
 
 							weldingSys->setPosition( &pos );
@@ -673,7 +673,7 @@ void SlavedUpdate::moveToNewRepairSpot()
 	{
 		//Allow me to wander away from the pinnedPosition.
 		Real randomDirection = GameLogicRandomValue( 0, 2*PI );
-		m_guardPointOffset.set( master->getPosition() );
+		m_guardPointOffset.set( *master->getPosition() );
 		m_guardPointOffset.x += data->m_repairRange * Cos( randomDirection );
 		m_guardPointOffset.y += data->m_repairRange * Sin( randomDirection );
 		m_guardPointOffset.z = TheTerrainLogic->getGroundHeight( m_guardPointOffset.x, m_guardPointOffset.y );

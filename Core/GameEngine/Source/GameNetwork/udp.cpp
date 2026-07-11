@@ -146,6 +146,8 @@ Int UDP::Bind(UnsignedInt IP,UnsignedShort Port)
 {
   int retval;
   int status;
+  UnsignedInt ipHostOrder = IP;
+  UnsignedShort portHostOrder = Port;
 
   IP=htonl(IP);
   Port=htons(Port);
@@ -159,19 +161,28 @@ Int UDP::Bind(UnsignedInt IP,UnsignedShort Port)
     fd=-1;
   #endif
   if (fd==-1)
+  {
+	// GeneralsX @build GitHubCopilot 11/04/2026 Capture socket creation failure details for LAN diagnostics.
+	m_lastError = WSAGetLastError();
+	DEBUG_LOG(("UDP::Bind - socket() failed for %d.%d.%d.%d:%d err=%d",
+    (ipHostOrder >> 24) & 0xFF, (ipHostOrder >> 16) & 0xFF, (ipHostOrder >> 8) & 0xFF, ipHostOrder & 0xFF,
+    portHostOrder, m_lastError));
     return(UNKNOWN);
+  }
 
   retval=bind(fd,(struct sockaddr *)&addr,sizeof(addr));
 
-  #ifdef _WIN32
   if (retval==SOCKET_ERROR)
 	{
-    retval=-1;
+		retval=-1;
 		m_lastError = WSAGetLastError();
 	}
-  #endif
   if (retval==-1)
   {
+	// GeneralsX @build GitHubCopilot 11/04/2026 Capture bind failure endpoint and error code.
+	DEBUG_LOG(("UDP::Bind - bind() failed for %d.%d.%d.%d:%d err=%d",
+    (ipHostOrder >> 24) & 0xFF, (ipHostOrder >> 16) & 0xFF, (ipHostOrder >> 8) & 0xFF, ipHostOrder & 0xFF,
+    portHostOrder, m_lastError));
     status=GetStatus();
     //CERR("Bind failure (" << status << ") IP " << IP << " PORT " << Port )
     return(status);
@@ -240,17 +251,20 @@ Int UDP::Write(const unsigned char *msg,UnsignedInt len,UnsignedInt IP,UnsignedS
 
   ClearStatus();
   retval=sendto(fd,(const char *)msg,len,0,(struct sockaddr *)&to,sizeof(to));
-  #ifdef _WIN32
+
   if (retval==SOCKET_ERROR)
 	{
     retval=-1;
 		m_lastError = WSAGetLastError();
+    // GeneralsX @build GitHubCopilot 11/04/2026 Capture UDP send failure endpoint and error code.
+    DEBUG_LOG(("UDP::Write - sendto failed dst=%d.%d.%d.%d:%d len=%d err=%d",
+      (IP >> 24) & 0xFF, (IP >> 16) & 0xFF, (IP >> 8) & 0xFF, IP & 0xFF,
+      port, len, m_lastError));
 #ifdef DEBUG_LOGGING
 		static Int errCount = 0;
 #endif
 		DEBUG_ASSERTLOG(errCount++ > 100, ("UDP::Write() - WSA error is %s", GetWSAErrorString(WSAGetLastError()).str()));
 	}
-  #endif
 
   return(retval);
 }
@@ -264,13 +278,15 @@ Int UDP::Read(unsigned char *msg,UnsignedInt len,sockaddr_in *from)
   if (from!=nullptr)
   {
     retval=recvfrom(fd,(char *)msg,len,0,(struct sockaddr *)from,&alen);
-    #ifdef _WIN32
+
     if (retval == SOCKET_ERROR)
 		{
 			if (WSAGetLastError() != WSAEWOULDBLOCK)
 			{
 				// failing because of a blocking error isn't really such a bad thing.
 				m_lastError = WSAGetLastError();
+        // GeneralsX @build GitHubCopilot 11/04/2026 Capture UDP receive failure details for LAN diagnostics.
+        DEBUG_LOG(("UDP::Read - recvfrom failed len=%d err=%d", len, m_lastError));
 #ifdef DEBUG_LOGGING
 				static Int errCount = 0;
 #endif
@@ -280,18 +296,19 @@ Int UDP::Read(unsigned char *msg,UnsignedInt len,sockaddr_in *from)
 				retval = 0;
 			}
 		}
-    #endif
   }
   else
   {
     retval=recvfrom(fd,(char *)msg,len,0,nullptr,nullptr);
-    #ifdef _WIN32
+
     if (retval==SOCKET_ERROR)
 		{
 			if (WSAGetLastError() != WSAEWOULDBLOCK)
 			{
 				// failing because of a blocking error isn't really such a bad thing.
 				m_lastError = WSAGetLastError();
+        // GeneralsX @build GitHubCopilot 11/04/2026 Capture UDP receive failure details for LAN diagnostics.
+        DEBUG_LOG(("UDP::Read - recvfrom failed len=%d err=%d", len, m_lastError));
 #ifdef DEBUG_LOGGING
 				static Int errCount = 0;
 #endif
@@ -301,7 +318,6 @@ Int UDP::Read(unsigned char *msg,UnsignedInt len,sockaddr_in *from)
 				retval = 0;
 			}
 		}
-    #endif
   }
   return(retval);
 }

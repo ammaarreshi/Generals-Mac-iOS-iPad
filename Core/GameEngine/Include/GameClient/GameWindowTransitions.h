@@ -647,7 +647,7 @@ private:
 	typedef std::list<TransitionWindow *> TransitionWindowList;
 	TransitionWindowList m_transitionWindowList;
 	Int m_directionMultiplier;
-	Int m_currentFrame; ///< maintain how long we've spent on this transition;
+	Real m_currentFrame; ///< maintain how long we've spent on this transition (in 30fps-equivalent frames);
 	AsciiString m_name;
 };
 

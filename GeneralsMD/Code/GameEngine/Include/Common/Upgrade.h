@@ -52,7 +52,7 @@ enum UpgradeStatusType CPP_11(: Int)
 };
 
 //The maximum number of upgrades.
-// TheSuperHackers @tweak Stubbjax 22/01/2026 Increases max upgrade count from 128 to allow for more upgrades.
+// TheSuperHackers @tweak Stubbjax 22/01/2026 Increases max upgrade count from Generals:64, Zero Hour:128 to allow for more upgrades.
 // A value of 512 was chosen to allow room for plenty of upgrades while also conserving memory.
 #define UPGRADE_MAX_COUNT 512
 

@@ -1468,7 +1468,7 @@ void makeAlignToNormalMatrix( Real angle, const Coord3D& pos, const Coord3D& nor
 	/*
 		It is extremely important that the resulting matrix is such that
 		the xvector points in the angle we specified; specifically,
-		that atan2(xvec.y, xvec.x) == angle. So we must construct
+		that WWMath::Atan2Origin(xvec.y, xvec.x) == angle. So we must construct
 		the matrix carefully to ensure this!
 	*/
 	x.x = Cos( angle );
@@ -1492,7 +1492,7 @@ void makeAlignToNormalMatrix( Real angle, const Coord3D& pos, const Coord3D& nor
 	DEBUG_ASSERTCRASH(fabs(x.x*z.x + x.y*z.y + x.z*z.z)<0.0001,("dot is not zero (%f)",fabs(x.x*z.x + x.y*z.y + x.z*z.z)));
 
 	// now computing the y vector is trivial.
-	y.crossProduct( &z, &x, &y );
+	y.crossProduct( z, x, y );
 	y.normalize();
 
 	mtx.Set(  x.x, y.x, z.x, pos.x,
@@ -1633,7 +1633,7 @@ Bool TerrainLogic::isPurposeOfPath( Waypoint *pWay, AsciiString label )
 PolygonTrigger *TerrainLogic::getTriggerAreaByName( AsciiString name )
 {
 	for (PolygonTrigger* pTrig = PolygonTrigger::getFirstPolygonTrigger(); pTrig; pTrig = pTrig->getNext()) {
-		AsciiString trigName = pTrig->getTriggerName();
+		const AsciiString& trigName = pTrig->getTriggerName();
 		if (name == trigName)
 			return pTrig;
 	}
@@ -2369,7 +2369,7 @@ void TerrainLogic::setWaterHeight( const WaterHandle *water, Real height, Real d
 		center.z = 0.0f;  // irrelevant
 
 		// the max radius to scan around us is the diagonal of the bounding region
-		Real maxDist = sqrt( affectedRegion.width() * affectedRegion.width() +
+		Real maxDist = WWMath::SqrtOrigin( affectedRegion.width() * affectedRegion.width() +
 												 affectedRegion.height() * affectedRegion.height() );
 
 		// scan the objects in the area of the water affected
@@ -2879,7 +2879,7 @@ void TerrainLogic::createCraterInTerrain(Object *obj)
 			deltaX = ( i * MAP_XY_FACTOR ) - pos->x;
 			deltaY = ( j * MAP_XY_FACTOR ) - pos->y;
 
-      Real distance = sqrt( sqr( deltaX ) + sqr( deltaY ) );
+      Real distance = WWMath::SqrtOrigin( sqr( deltaX ) + sqr( deltaY ) );
 
 			if ( distance < radius ) //inside circle
       {

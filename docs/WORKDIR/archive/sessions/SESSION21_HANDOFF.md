@@ -323,9 +323,9 @@ Don't try to fully integrate SDL3 yet. Windowing comes after Core library compil
 
 ### Files to Consult
 ```
-references/fighter19-dxvk-port/GeneralsMD/Code/CompatLib/CMakeLists.txt
-references/fighter19-dxvk-port/Core/Libraries/Source/WWVegas/WW3D2/agg_def.cpp
-references/jmarshall-win64-modern/Code/Audio/  # For future OpenAL work
+references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/CompatLib/CMakeLists.txt
+references/old-refs/fighter19-dxvk-port/Core/Libraries/Source/WWVegas/WW3D2/agg_def.cpp
+references/old-refs/jmarshall-win64-modern/Code/Audio/  # For future OpenAL work
 ```
 
 ---

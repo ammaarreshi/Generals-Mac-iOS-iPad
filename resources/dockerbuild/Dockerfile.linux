@@ -2,7 +2,7 @@
 # Base image for building GeneralsX/GeneralsXZH Linux binaries
 # Platform: linux/amd64 (x86_64)
 
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 
 LABEL maintainer="GeneralsX Project"
 LABEL description="Linux native build environment for GeneralsX (GCC/Clang + CMake + vcpkg)"

@@ -227,9 +227,9 @@ void BezierSegment::splitSegmentAtT(Real tValue, BezierSegment &outSeg1, BezierS
 	p1p2.scale(tValue);
 	p2p3.scale(tValue);
 
-	p0p1.add(&m_controlPoints[0]);
-	p1p2.add(&m_controlPoints[1]);
-	p2p3.add(&m_controlPoints[2]);
+	p0p1.add(m_controlPoints[0]);
+	p1p2.add(m_controlPoints[1]);
+	p2p3.add(m_controlPoints[2]);
 
 	Coord3D triLeft = { p1p2.x - p0p1.x,
 											p1p2.y - p0p1.y,
@@ -242,8 +242,8 @@ void BezierSegment::splitSegmentAtT(Real tValue, BezierSegment &outSeg1, BezierS
 	triLeft.scale(tValue);
 	triRight.scale(tValue);
 
-	triLeft.add(&p0p1);
-	triRight.add(&p1p2);
+	triLeft.add(p0p1);
+	triRight.add(p1p2);
 
 	outSeg1.m_controlPoints[0] = m_controlPoints[0];
 	outSeg1.m_controlPoints[1] = p0p1;

@@ -1309,13 +1309,8 @@ InGameUI::~InGameUI()
 //-------------------------------------------------------------------------------------------------
 void InGameUI::init()
 {
-	// GeneralsX @tweak GitHubCopilot 27/05/2026 Trace final in-game UI font slots after language overrides.
-	char log_buffer[512];
-
 	INI ini;
 	ini.loadFileDirectory( "Data\\INI\\InGameUI", INI_LOAD_OVERWRITE, nullptr );
-	sprintf(log_buffer, "[GX-ISSUE144] InGameUI init loaded Data\\INI\\InGameUI");
-	fprintf(stderr, "%s\\n", log_buffer);
 
 	//override INI values with language localized values:
 	if (TheGlobalLanguageData)
@@ -1375,22 +1370,6 @@ void InGameUI::init()
 			m_namedTimerReadyPointSize = TheGlobalLanguageData->m_namedTimerCountdownReadyFont.size;
 			m_namedTimerReadyBold = TheGlobalLanguageData->m_namedTimerCountdownReadyFont.bold;
 		}
-
-		sprintf(log_buffer,
-			"[GX-ISSUE144] InGameUI font override drawableCaption=%s size=%d bold=%d defaultWindow=%s size=%d bold=%d unicode=%s",
-			m_drawableCaptionFont.str(),
-			m_drawableCaptionPointSize,
-			m_drawableCaptionBold,
-			TheGlobalLanguageData->m_defaultWindowFont.name.str(),
-			TheGlobalLanguageData->m_defaultWindowFont.size,
-			TheGlobalLanguageData->m_defaultWindowFont.bold,
-			TheGlobalLanguageData->m_unicodeFontName.isNotEmpty() ? TheGlobalLanguageData->m_unicodeFontName.str() : "<empty>");
-		fprintf(stderr, "%s\\n", log_buffer);
-	}
-	else
-	{
-		sprintf(log_buffer, "[GX-ISSUE144] InGameUI init without TheGlobalLanguageData");
-		fprintf(stderr, "%s\\n", log_buffer);
 	}
 
 	/**@ todo we used to put in the hint spy translator, but it's difficult
@@ -1541,19 +1520,6 @@ void InGameUI::handleRadiusCursor()
 {
 	if (!m_curRadiusCursor.isEmpty())
 	{
-		const MouseIO* mouseIO = TheMouse->getMouseStatus();
-		Coord3D pos;
-
-		//
-		// if the mouse is in the radar window, the position in the world is that which is
-		// represented by the radar, otherwise we use the mouse position itself transformed
-		// from screen to world
-		// But only if the radar is on.
-		//
-		if( !rts::localPlayerHasRadar()  ||  (TheRadar->screenPixelToWorld( &mouseIO->pos, &pos ) == FALSE) )// if radar off, or point not on radar
-			TheTacticalView->screenToTerrain( &mouseIO->pos, &pos );
-
-
     if ( TheGlobalData->m_doubleClickAttackMove && m_duringDoubleClickAttackMoveGuardHintTimer > 0 )
     {
       m_curRadiusCursor.setOpacity( m_duringDoubleClickAttackMoveGuardHintTimer * 0.1f );
@@ -1562,8 +1528,31 @@ void InGameUI::handleRadiusCursor()
     }
     else
     {
-  		m_curRadiusCursor.setPosition(pos);	//world space position of center of decal
-      m_curRadiusCursor.update();
+			const MouseIO* mouseIO = TheMouse->getMouseStatus();
+			Coord3D pos;
+			Bool hasPos = false;
+
+			//
+			// if the mouse is in the radar window, the position in the world is that which is
+			// represented by the radar, otherwise we use the mouse position itself transformed
+			// from screen to world, but only if the radar is on.
+			//
+			if( rts::localPlayerHasRadar() )
+			{
+				hasPos = TheRadar->screenPixelToWorld( &mouseIO->pos, &pos );
+			}
+
+			if( !hasPos )
+			{
+				// if radar off, or point not on radar
+				hasPos = TheTacticalView->screenToTerrain( &mouseIO->pos, &pos );
+			}
+
+			if( hasPos )
+			{
+				m_curRadiusCursor.setPosition(pos);	//world space position of center of decal
+				m_curRadiusCursor.update();
+			}
     }
 
   }
@@ -1572,9 +1561,11 @@ void InGameUI::handleRadiusCursor()
 
 void InGameUI::triggerDoubleClickAttackMoveGuardHint()
 {
-  m_duringDoubleClickAttackMoveGuardHintTimer = 11;
 	const MouseIO* mouseIO = TheMouse->getMouseStatus();
-	TheTacticalView->screenToTerrain( &mouseIO->pos, &m_duringDoubleClickAttackMoveGuardHintStashedPosition );
+	if( TheTacticalView->screenToTerrain( &mouseIO->pos, &m_duringDoubleClickAttackMoveGuardHintStashedPosition ) )
+	{
+		m_duringDoubleClickAttackMoveGuardHintTimer = 11;
+	}
 }
 
 
@@ -1667,20 +1658,21 @@ void InGameUI::handleBuildPlacements()
 				Coord3D worldStart, worldEnd;
 
 				// project the start and the end points of the line anchor into the 3D world
-				TheTacticalView->screenToTerrain( &start, &worldStart );
-				TheTacticalView->screenToTerrain( &end, &worldEnd );
-
-				Coord2D v;
-				v.x = worldEnd.x - worldStart.x;
-				v.y = worldEnd.y - worldStart.y;
-				angle = v.toAngle();
-
-				// TheSuperHackers @tweak Stubbjax 04/08/2025 Snap angle to nearest 45 degrees
-				// while using force attack mode for convenience.
-				if (isInForceAttackMode())
+				if( TheTacticalView->screenToTerrain( &start, &worldStart ) &&
+					TheTacticalView->screenToTerrain( &end, &worldEnd ) )
 				{
-					const Real snapRadians = DEG_TO_RADF(45);
-					angle = WWMath::Round(angle / snapRadians) * snapRadians;
+					Coord2D v;
+					v.x = worldEnd.x - worldStart.x;
+					v.y = worldEnd.y - worldStart.y;
+					angle = v.toAngle();
+
+					// TheSuperHackers @tweak Stubbjax 04/08/2025 Snap angle to nearest 45 degrees
+					// while using force attack mode for convenience.
+					if (isInForceAttackMode())
+					{
+						const Real snapRadians = DEG_TO_RADF(45);
+						angle = WWMath::Round(angle / snapRadians) * snapRadians;
+					}
 				}
 			}
 
@@ -1697,56 +1689,52 @@ void InGameUI::handleBuildPlacements()
 		// set the location and angle of the place icon
 		/**@todo this whole orientation vector thing is LAME! Must replace, all I want to
 		to do is set a simple angle and have it automatically change, ug! */
-		TheTacticalView->screenToTerrain( &loc, &world );
-		m_placeIcon[ 0 ]->setPosition( &world );
-		m_placeIcon[ 0 ]->setOrientation( angle );
-
-
-		//
-		// check to see if this is a legal location to build something at and tint or "un-tint"
-		// the cursor icons as appropriate.  This involves a pathfind which could be
-		// expensive so we don't want to do it on every frame (although that would be ideal)
-		// If we discover there are cases that this is just too slow we should increase the
-		// delay time between checks or we need to come up with a way of recording what is
-		// valid and what isn't or "fudge" the results to feel "ok"
-		//
-		if( TheGameClient->getFrame() & 0x1 )
+		if( TheTacticalView->screenToTerrain( &loc, &world ) )
 		{
-			TheTerrainVisual->removeAllBibs();
+			m_placeIcon[ 0 ]->setPosition( &world );
+			m_placeIcon[ 0 ]->setOrientation( angle );
 
-			Object *builderObject = TheGameLogic->findObjectByID( getPendingPlaceSourceObjectID() );
-
-			LegalBuildCode lbc;
-			lbc = TheBuildAssistant->isLocationLegalToBuild( &world,
-																											 m_pendingPlaceType,
-																											 angle,
-																											 BuildAssistant::USE_QUICK_PATHFIND |
-																											 BuildAssistant::TERRAIN_RESTRICTIONS |
-																											 BuildAssistant::CLEAR_PATH |
-																											 BuildAssistant::NO_OBJECT_OVERLAP |
-																											 BuildAssistant::SHROUD_REVEALED |
-																											 BuildAssistant::IGNORE_STEALTHED,
-																											 builderObject,
-																											 nullptr );
-
-			if( lbc != LBC_OK )
-				m_placeIcon[ 0 ]->colorTint( &IllegalBuildColor );
-			else
-				m_placeIcon[ 0 ]->colorTint( nullptr );
-
-
-
-
-			// Add the bibs around the structure.
-			if (lbc != LBC_OK)
+			//
+			// check to see if this is a legal location to build something at and tint or "un-tint"
+			// the cursor icons as appropriate.  This involves a pathfind which could be
+			// expensive so we don't want to do it on every frame (although that would be ideal)
+			// If we discover there are cases that this is just too slow we should increase the
+			// delay time between checks or we need to come up with a way of recording what is
+			// valid and what isn't or "fudge" the results to feel "ok"
+			//
+			if( TheGameClient->getFrame() & 0x1 )
 			{
-				TheTerrainVisual->addFactionBibDrawable(m_placeIcon[0], lbc != LBC_OK);
-			} else {
-				TheTerrainVisual->removeFactionBibDrawable(m_placeIcon[0]);
+				TheTerrainVisual->removeAllBibs();
+
+				Object *builderObject = TheGameLogic->findObjectByID( getPendingPlaceSourceObjectID() );
+
+				LegalBuildCode lbc;
+				lbc = TheBuildAssistant->isLocationLegalToBuild( &world,
+																												 m_pendingPlaceType,
+																												 angle,
+																												 BuildAssistant::USE_QUICK_PATHFIND |
+																												 BuildAssistant::TERRAIN_RESTRICTIONS |
+																												 BuildAssistant::CLEAR_PATH |
+																												 BuildAssistant::NO_OBJECT_OVERLAP |
+																												 BuildAssistant::SHROUD_REVEALED |
+																												 BuildAssistant::IGNORE_STEALTHED,
+																												 builderObject,
+																												 nullptr );
+
+				if( lbc != LBC_OK )
+					m_placeIcon[ 0 ]->colorTint( &IllegalBuildColor );
+				else
+					m_placeIcon[ 0 ]->colorTint( nullptr );
+
+				// Add the bibs around the structure.
+				if (lbc != LBC_OK)
+				{
+					TheTerrainVisual->addFactionBibDrawable(m_placeIcon[0], lbc != LBC_OK);
+				} else {
+					TheTerrainVisual->removeFactionBibDrawable(m_placeIcon[0]);
+				}
 			}
 		}
-
-
 
 		//
 		// we have additional place icons when we're placing down a line of walls or other
@@ -1755,77 +1743,78 @@ void InGameUI::handleBuildPlacements()
 		//
 		if( isPlacementAnchored() && TheBuildAssistant->isLineBuildTemplate( m_pendingPlaceType ) )
 		{
-			Int i;
-
 			// get our line placement points
 			ICoord2D screenStart, screenEnd;
 			getPlacementPoints( &screenStart, &screenEnd );
 
 			// project the start and the end points of the line anchor into the 3D world
 			Coord3D worldStart, worldEnd;
-			TheTacticalView->screenToTerrain( &screenStart, &worldStart );
-			TheTacticalView->screenToTerrain( &screenEnd, &worldEnd );
-
-			// how big are each of our objects
-			Real objectSize = m_pendingPlaceType->getTemplateGeometryInfo().getMajorRadius() * 2.0f;
-
-			// what is our max tiling length we can make
-			Int maxObjects = TheGlobalData->m_maxLineBuildObjects;
-
-			// get the builder object that will be constructing things
-			Object *builderObject = TheGameLogic->findObjectByID( getPendingPlaceSourceObjectID() );
-
-			//
-			// given the start/end points in the world and the the angle of the wall, fill
-			// out an array of positions that "tile" this wall across the landscape
-			//
-			BuildAssistant::TileBuildInfo *tileBuildInfo;
-			tileBuildInfo = TheBuildAssistant->buildTiledLocations( m_pendingPlaceType, angle,
-																															&worldStart, &worldEnd,
-																															objectSize, maxObjects,
-																															builderObject );
-
-			// create any necessary drawables we need to "fill out" the line
-			for( i = 0; i < tileBuildInfo->tilesUsed; i++ )
+			if( TheTacticalView->screenToTerrain( &screenStart, &worldStart ) &&
+				TheTacticalView->screenToTerrain( &screenEnd, &worldEnd ) )
 			{
+				// how big are each of our objects
+				Real objectSize = m_pendingPlaceType->getTemplateGeometryInfo().getMajorRadius() * 2.0f;
 
-				if( m_placeIcon[ i ] == nullptr )
+				// what is our max tiling length we can make
+				Int maxObjects = TheGlobalData->m_maxLineBuildObjects;
+
+				// get the builder object that will be constructing things
+				Object *builderObject = TheGameLogic->findObjectByID( getPendingPlaceSourceObjectID() );
+
+				//
+				// given the start/end points in the world and the the angle of the wall, fill
+				// out an array of positions that "tile" this wall across the landscape
+				//
+				BuildAssistant::TileBuildInfo *tileBuildInfo;
+				tileBuildInfo = TheBuildAssistant->buildTiledLocations( m_pendingPlaceType, angle,
+																																&worldStart, &worldEnd,
+																																objectSize, maxObjects,
+																																builderObject );
+
+				// create any necessary drawables we need to "fill out" the line
+				Int i;
+				for( i = 0; i < tileBuildInfo->tilesUsed; i++ )
 				{
-					UnsignedInt drawableStatus = DRAWABLE_STATUS_NO_STATE_PARTICLES;
-					drawableStatus |= TheGlobalData->m_objectPlacementShadows ? DRAWABLE_STATUS_SHADOWS : 0;
-					m_placeIcon[ i ] = TheThingFactory->newDrawable( m_pendingPlaceType, drawableStatus );
+
+					if( m_placeIcon[ i ] == nullptr )
+					{
+						UnsignedInt drawableStatus = DRAWABLE_STATUS_NO_STATE_PARTICLES;
+						drawableStatus |= TheGlobalData->m_objectPlacementShadows ? DRAWABLE_STATUS_SHADOWS : 0;
+						m_placeIcon[ i ] = TheThingFactory->newDrawable( m_pendingPlaceType, drawableStatus );
+					}
+
 				}
 
-			}
+				//
+				// destroy any drawables that we're not using anymore because a previous
+				// line length was longer
+				//
+				for( i = tileBuildInfo->tilesUsed; i < maxObjects; i++ )
+				{
 
-			//
-			// destroy any drawables that we're not using anymore because a previous
-			// line length was longer
-			//
-			for( i = tileBuildInfo->tilesUsed; i < maxObjects; i++ )
-			{
+					if( m_placeIcon[ i ] != nullptr )
+						TheGameClient->destroyDrawable( m_placeIcon[ i ] );
+					m_placeIcon[ i ] = nullptr;
 
-				if( m_placeIcon[ i ] != nullptr )
-					TheGameClient->destroyDrawable( m_placeIcon[ i ] );
-				m_placeIcon[ i ] = nullptr;
+				}
 
-			}
+				//
+				// march down each drawable and set the position based on its position in the
+				// line and set their angles all the same
+				//
+				for( i = 0; i < tileBuildInfo->tilesUsed; i++ )
+				{
 
-			//
-			// march down each drawable and set the position based on its position in the
-			// line and set their angles all the same
-			//
-			for( i = 0; i < tileBuildInfo->tilesUsed; i++ )
-			{
+					// set the drawable position
+					m_placeIcon[ i ]->setPosition( &tileBuildInfo->positions[ i ] );
 
-				// set the drawable position
-				m_placeIcon[ i ]->setPosition( &tileBuildInfo->positions[ i ] );
+					// set opacity for the drawable
+					m_placeIcon[ i ]->setDrawableOpacity( TheGlobalData->m_objectPlacementOpacity );
 
-				// set opacity for the drawable
-				m_placeIcon[ i ]->setDrawableOpacity( TheGlobalData->m_objectPlacementOpacity );
+					// set the drawable angle
+					m_placeIcon[ i ]->setOrientation( angle );
 
-				// set the drawable angle
-				m_placeIcon[ i ]->setOrientation( angle );
+				}
 
 			}
 
@@ -5674,6 +5663,9 @@ static const UnsignedInt FRAMES_BEFORE_EXPIRE_TO_FADE = static_cast<float>(LOGIC
 // ------------------------------------------------------------------------------------------------
 void InGameUI::updateAndDrawWorldAnimations()
 {
+	// TheSuperHackers @tweak bobtista World animation Z-rise is now decoupled from the render update.
+	const Real zRiseTimeScale = TheFramePacer->getActualLogicTimeScaleOverFpsRatio();
+
 	// go through all animations
 	for( WorldAnimationListIterator it = m_worldAnimationList.begin();
 			 it != m_worldAnimationList.end(); /*empty*/ )
@@ -5682,31 +5674,27 @@ void InGameUI::updateAndDrawWorldAnimations()
 		// get data
 		WorldAnimationData *wad = *it;
 
-		// update portion ... only when the game is in motion
-		if( TheGameLogic->isGamePaused() == FALSE )
+		//
+		// see if it's time to expire this animation based on animation type and options or
+		// the expire frame
+		//
+		if( TheGameLogic->getFrame() >= wad->m_expireFrame ||
+				(BitIsSet( wad->m_options, WORLD_ANIM_PLAY_ONCE_AND_DESTROY ) &&
+				 BitIsSet( wad->m_anim->getStatus(), ANIM_2D_STATUS_COMPLETE )) )
 		{
 
-			//
-			// see if it's time to expire this animation based on animation type and options or
-			// the expire frame
-			//
-			if( TheGameLogic->getFrame() >= wad->m_expireFrame ||
-					(BitIsSet( wad->m_options, WORLD_ANIM_PLAY_ONCE_AND_DESTROY ) &&
-					 BitIsSet( wad->m_anim->getStatus(), ANIM_2D_STATUS_COMPLETE )) )
-			{
+			// delete this element and continue
+			deleteInstance(wad->m_anim);
+			delete wad;
+			it = m_worldAnimationList.erase( it );
+			continue;
 
-				// delete this element and continue
-				deleteInstance(wad->m_anim);
-				delete wad;
-				it = m_worldAnimationList.erase( it );
-				continue;
+		}
 
-			}
-
-			// update the Z value
-			if( wad->m_zRisePerSecond )
-				wad->m_worldPos.z += wad->m_zRisePerSecond / static_cast<float>(LOGICFRAMES_PER_SECOND);
-
+		// update the Z value
+		if( wad->m_zRisePerSecond )
+		{
+			wad->m_worldPos.z += wad->m_zRisePerSecond / LOGICFRAMES_PER_SECOND * zRiseTimeScale;
 		}
 
 		//

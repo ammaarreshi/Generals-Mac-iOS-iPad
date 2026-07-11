@@ -608,7 +608,24 @@ Int W3DShadowGeometry::initFromHLOD(RenderObjClass *robj)
 
 	Int i,j,k,newVertexCount;
 
+	// GeneralsX @bugfix Mr. Meeseeks 17/06/2026 If HLOD contains any skinned meshes at any LOD level, skip the entire HLOD from casting volumetric shadows
+	for (int l = 0; l < hlod->Get_LOD_Count(); l++)
+	{
+		for (i = 0; i < hlod->Get_Lod_Model_Count(l); i++)
+		{
+			if (hlod->Peek_Lod_Model(l,i) && hlod->Peek_Lod_Model(l,i)->Class_ID() == RenderObjClass::CLASSID_MESH)
+			{
+				MeshClass *m = (MeshClass *)hlod->Peek_Lod_Model(l,i);
+				if (m && m->Peek_Model() && m->Peek_Model()->Get_Flag(MeshGeometryClass::SKIN))
+				{
+					return FALSE;
+				}
+			}
+		}
+	}
+
 	Int top = hlod->Get_LOD_Count()-1;
+
 	W3DShadowGeometryMesh *geomMesh=&m_meshList[m_meshCount];
 
 	m_numTotalsVerts=0;
@@ -624,6 +641,10 @@ Int W3DShadowGeometry::initFromHLOD(RenderObjClass *robj)
 
 			if ((geomMesh->m_mesh->Is_Alpha() || geomMesh->m_mesh->Is_Translucent()) && !geomMesh->m_mesh->Peek_Model()->Get_Flag(MeshGeometryClass::CAST_SHADOW))
 				continue; //transparent meshes that don't have forced shadows will not cast volumetric shadows
+
+			// GeneralsX @bugfix Mr. Meeseeks 17/06/2026 Skin meshes should never cast a volumetric shadow (matches Zero Hour)
+			if (geomMesh->m_mesh->Peek_Model()->Get_Flag(MeshGeometryClass::SKIN))
+				continue;
 
 			MeshModelClass *mm = geomMesh->m_mesh->Peek_Model();
 			geomMesh->m_numVerts=mm->Get_Vertex_Count();
@@ -692,6 +713,10 @@ Int W3DShadowGeometry::initFromMesh(RenderObjClass *robj)
 	geomMesh->m_meshRobjIndex = -1;	//robj is the mesh so no index needed.
 	if (((geomMesh->m_mesh->Is_Alpha() || geomMesh->m_mesh->Is_Translucent()) && !geomMesh->m_mesh->Peek_Model()->Get_Flag(MeshGeometryClass::CAST_SHADOW)))
 		return FALSE; //transparent meshes that don't have forced shadows will not cast volumetric shadows
+
+	// GeneralsX @bugfix Mr. Meeseeks 17/06/2026 Skin meshes should never cast a volumetric shadow
+	if (geomMesh->m_mesh->Peek_Model()->Get_Flag(MeshGeometryClass::SKIN))
+		return FALSE;
 
 	MeshModelClass *mm = geomMesh->m_mesh->Peek_Model();
 	geomMesh->m_numVerts=mm->Get_Vertex_Count();

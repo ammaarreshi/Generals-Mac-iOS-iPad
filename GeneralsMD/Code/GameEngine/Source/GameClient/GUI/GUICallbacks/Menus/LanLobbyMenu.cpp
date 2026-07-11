@@ -417,12 +417,32 @@ void LanLobbyMenuInit( WindowLayout *layout, void *userData )
 	}
 
 	// Choose an IP address, then initialize the LAN singleton
-	UnsignedInt IP = TheGlobalData->m_defaultIP;
+	OptionPreferences optionPrefs;
+	UnsignedInt preferredLANIP = optionPrefs.getLANIPAddress();
+	UnsignedInt IP = preferredLANIP ? preferredLANIP : TheGlobalData->m_defaultIP;
 	IPEnumeration IPs;
+	EnumeratedIP *IPlist = IPs.getAddresses();
 	const WideChar* IPSource;
-	if (!IP)
+	Bool foundPreferredIP = FALSE;
+
+	for (EnumeratedIP *candidate = IPlist; candidate != nullptr; candidate = candidate->getNext())
 	{
-		EnumeratedIP *IPlist = IPs.getAddresses();
+		if (candidate->getIP() == IP)
+		{
+			foundPreferredIP = TRUE;
+			break;
+		}
+	}
+
+	if (IP != 0 && foundPreferredIP)
+	{
+		IPSource = (preferredLANIP == IP) ? L"Options LAN IP" : L"Global default LAN IP";
+		// GeneralsX @build GitHubCopilot 12/04/2026 Make LAN lobby explicitly honor configured LAN IP preference when it is still valid.
+		DEBUG_LOG(("LanLobbyMenuInit - using preferred LAN IP %d.%d.%d.%d from %ls",
+			PRINTF_IP_AS_4_INTS(IP), IPSource));
+	}
+	else
+	{
 		/*
 		while (IPlist && IPlist->getNext())
 		{
@@ -435,13 +455,13 @@ void LanLobbyMenuInit( WindowLayout *layout, void *userData )
 			/// @todo: display error and exit lan lobby if no IPs are found
 		}
 
-		IPSource = L"Local IP chosen";
+		IPSource = L"Enumerated LAN IP fallback";
 		IP = IPlist->getIP();
+		// GeneralsX @build GitHubCopilot 11/04/2026 Log auto-selected LAN IP to diagnose cross-platform discovery failures.
+		DEBUG_LOG(("LanLobbyMenuInit - auto-selected LAN IP %d.%d.%d.%d from enumeration",
+			PRINTF_IP_AS_4_INTS(IP)));
 	}
-	else
-	{
-		IPSource = L"Default local IP";
-	}
+
 #if defined(RTS_DEBUG)
 	UnicodeString str;
 	str.format(L"%s: %d.%d.%d.%d", IPSource, PRINTF_IP_AS_4_INTS(IP));
@@ -450,8 +470,17 @@ void LanLobbyMenuInit( WindowLayout *layout, void *userData )
 
 	// TheLAN->init() sets us to be in a LAN menu screen automatically.
 	TheLAN->init();
+	// GeneralsX @build GitHubCopilot 11/04/2026 Log LAN bind attempt from lobby startup path.
+	DEBUG_LOG(("LanLobbyMenuInit - calling SetLocalIP(%d.%d.%d.%d)", PRINTF_IP_AS_4_INTS(IP)));
 	if (TheLAN->SetLocalIP(IP) == FALSE) {
 		LANSocketErrorDetected = TRUE;
+		// GeneralsX @build GitHubCopilot 11/04/2026 Explicit failure breadcrumb for LAN socket initialization.
+		DEBUG_LOG(("LanLobbyMenuInit - SetLocalIP failed for %d.%d.%d.%d", PRINTF_IP_AS_4_INTS(IP)));
+	}
+	else
+	{
+		// GeneralsX @build GitHubCopilot 11/04/2026 Explicit success breadcrumb for LAN socket initialization.
+		DEBUG_LOG(("LanLobbyMenuInit - SetLocalIP succeeded for %d.%d.%d.%d", PRINTF_IP_AS_4_INTS(IP)));
 	}
 
 	//Initialize the gadgets on the window
@@ -470,6 +499,8 @@ void LanLobbyMenuInit( WindowLayout *layout, void *userData )
 
 	defaultName.truncateTo(g_lanPlayerNameLength);
 	TheLAN->RequestSetName(defaultName);
+	// GeneralsX @build GitHubCopilot 11/04/2026 Trace initial LAN discovery request from menu bootstrap.
+	DEBUG_LOG(("LanLobbyMenuInit - issuing initial RequestLocations() from LAN lobby"));
 	TheLAN->RequestLocations();
 
 	/*

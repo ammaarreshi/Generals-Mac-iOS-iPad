@@ -10,6 +10,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 BUILD_DIR="${PROJECT_ROOT}/build/macos-vulkan"
 SDL3_LIB_DIR="${BUILD_DIR}/_deps/sdl3-build"
 SDL3_IMAGE_LIB_DIR="${BUILD_DIR}/_deps/sdl3_image-build"
+OPENAL_LIB="${BUILD_DIR}/_deps/openal_soft-build/libopenal.1.dylib"
 FONTCONFIG_ETC_DIR="${BUILD_DIR}/vcpkg_installed/arm64-osx/etc/fonts"
 GAMESPY_LIB="${BUILD_DIR}/libgamespy.dylib"
 # GeneralsX @bugfix BenderAI 09/03/2026 Resolve DXVK dylib paths from both install copy and Meson output to avoid stale runtime libs.
@@ -84,6 +85,16 @@ ln -sf libSDL3.0.dylib "${RUNTIME_DIR}/libSDL3.dylib" 2>/dev/null || true
 cp -v "${SDL3_IMAGE_LIB_DIR}"/libSDL3_image.0.4.0.dylib "${RUNTIME_DIR}/"
 ln -sf libSDL3_image.0.4.0.dylib "${RUNTIME_DIR}/libSDL3_image.0.dylib" 2>/dev/null || true
 ln -sf libSDL3_image.0.4.0.dylib "${RUNTIME_DIR}/libSDL3_image.dylib" 2>/dev/null || true
+
+echo "  Copying OpenAL library..."
+# GeneralsX @bugfix Codex 10/07/2026 Make the OpenAL runtime independent of the build-tree LC_RPATH.
+if [[ ! -f "${OPENAL_LIB}" ]]; then
+    echo "ERROR: OpenAL library not found at ${OPENAL_LIB}"
+    echo "Rebuild the macos-vulkan OpenAL preset before deploying."
+    exit 1
+fi
+cp -v "${OPENAL_LIB}" "${RUNTIME_DIR}/libopenal.1.dylib"
+ln -sf libopenal.1.dylib "${RUNTIME_DIR}/libopenal.dylib" 2>/dev/null || true
 
 echo "  Copying GameSpy library..."
 cp -v "${GAMESPY_LIB}" "${RUNTIME_DIR}/"
@@ -242,6 +253,7 @@ echo ""
 echo "Deploy complete"
 echo "   Executable: ${RUNTIME_DIR}/GeneralsXZH"
 echo "   SDL3 libs:  ${RUNTIME_DIR}/libSDL3*.dylib"
+echo "   OpenAL:     ${RUNTIME_DIR}/libopenal.1.dylib"
 echo "   GameSpy:    ${RUNTIME_DIR}/libgamespy.dylib"
 echo "   DXVK d3d9:  ${RUNTIME_DIR}/libdxvk_d3d9.0.dylib"
 echo "   DXVK d3d8:  ${RUNTIME_DIR}/libdxvk_d3d8.0.dylib"

@@ -92,6 +92,11 @@ include(cmake/lzhl.cmake)
 # openal.cmake is self-guarded with if(SAGE_USE_OPENAL), so this is always safe to include.
 include(cmake/openal.cmake)
 
+# GeneralsX @feature fbraz 11/06/2026 Include miniaudio.cmake here (before Core subdirectory)
+# so miniaudio_lib target is available when Core/GameEngineDevice/CMakeLists.txt processes.
+# miniaudio.cmake is self-guarded with if(SAGE_USE_MINIAUDIO), so this is always safe to include.
+include(cmake/miniaudio.cmake)
+
 # GeneralsX @feature BenderAI 21/04/2026 libcurl for in-game update checker (SAGE_UPDATE_CHECK builds)
 # curl.cmake is self-guarded with if(SAGE_UPDATE_CHECK), so always safe to include.
 include(cmake/curl.cmake)

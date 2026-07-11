@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <Utility/hash_map_adapter.h>
 #include "WW3D2/dllist.h"
 #include "WWMath/vector2.h"
 #include "WWMath/vector3.h"

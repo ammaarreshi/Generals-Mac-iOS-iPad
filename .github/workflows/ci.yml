@@ -2,7 +2,6 @@ name: GeneralsX CI
 
 permissions:
   contents: read
-  pull-requests: write
 
 on:
   push:
@@ -78,7 +77,6 @@ jobs:
     uses: ./.github/workflows/build-linux-flatpak.yml
     with:
       preset: linux64-deploy
-    secrets: inherit
 
   build-macos:
     name: Build macOS
@@ -87,15 +85,15 @@ jobs:
     uses: ./.github/workflows/build-macos.yml
     with:
       preset: macos-vulkan
-    secrets: inherit
 
-  # GeneralsX @build BenderAI 18/05/2026 Deterministic replay tests run after Flatpak build on Linux and app build on macOS.
-  # Each job downloads the built artifact, extracts game assets (ASSETS_KEY secret) and
-  # platform replays from fbraz3/GeneralsXReplays, then runs headless replay simulations.
   replay-test-linux:
     name: Replay Tests (linux)
     needs: [build-linux-flatpak]
-    if: needs.build-linux-flatpak.result == 'success'
+    # Retail assets are decrypted only after trusted push/manual runs. Pull
+    # requests still build, but never receive ASSETS_KEY or execute with assets.
+    if: |
+      needs.build-linux-flatpak.result == 'success' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/replay-tests.yml
     with:
       platform: linux-flatpak
@@ -106,7 +104,9 @@ jobs:
   replay-test-macos:
     name: Replay Tests (macos)
     needs: [build-macos]
-    if: needs.build-macos.result == 'success'
+    if: |
+      needs.build-macos.result == 'success' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/replay-tests.yml
     with:
       platform: macos
@@ -141,4 +141,3 @@ jobs:
           needs.replay-test-linux.result == 'failure' ||
           needs.replay-test-macos.result == 'failure'
         run: exit 1
-

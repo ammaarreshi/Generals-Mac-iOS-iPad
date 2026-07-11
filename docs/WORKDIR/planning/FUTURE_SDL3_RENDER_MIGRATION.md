@@ -127,7 +127,7 @@ git diff TheSuperHackers/main -- Core/GameEngineDevice/
 
 ### 4. **Fighter19's Proven Solution**
 
-Reference implementation (`references/fighter19-dxvk-port/`):
+Reference implementation (`references/old-refs/fighter19-dxvk-port/`):
 - ✓ Full Linux build (native ELF)
 - ✓ Both Generals + Zero Hour
 - ✓ Gameplay tested (skirmish, campaign intros)
@@ -403,7 +403,7 @@ IF macOS native becomes mandatory:
 
 - **Current Implementation**: [DXVK Graphics Pipeline](Phase1_DXVK_Graphics.md) (when written)
 - **SDL3 Documentation**: https://wiki.libsdl.org/
-- **Fighter19 Reference**: `references/fighter19-dxvk-port/`
+- **Fighter19 Reference**: `references/old-refs/fighter19-dxvk-port/`
 - **DirectX8 API**: DXVK source code analysis
 - **Replay System**: `docs/WORKDIR/support/REPLAY_DETERMINISM.md` (future)
 

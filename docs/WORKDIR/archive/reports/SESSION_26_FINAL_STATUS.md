@@ -301,11 +301,11 @@ GeneralsMD/Code/
 ## Reference Materials
 
 ### Code References
-- **fighter19 DXVK port**: `references/fighter19-dxvk-port/`
+- **fighter19 DXVK port**: `references/old-refs/fighter19-dxvk-port/`
   - Graphics layer (DXVK), SDL3 integration
   - MinGW build patterns
   
-- **jmarshall modern port**: `references/jmarshall-win64-modern/`
+- **jmarshall modern port**: `references/old-refs/jmarshall-win64-modern/`
   - OpenAL audio implementation
   - Modern C++ patterns
 

@@ -3,7 +3,7 @@
 **Status**: 📋 PLANNING  
 **Priority**: 🔴 HIGH (after Phase 1 graphics)  
 **Est. Duration**: 2-3 sessions  
-**Reference**: `references/jmarshall-win64-modern/Code/Audio/` (adapt for Zero Hour)
+**Reference**: `references/old-refs/jmarshall-win64-modern/Code/Audio/` (adapt for Zero Hour)
 
 ---
 
@@ -50,17 +50,17 @@ Platform (Windows: Miles SDK, Linux: OpenAL)
 
 ### Key Discovery Points (Generals-only, adapt for Zero Hour!)
 
-**1. File**: `references/jmarshall-win64-modern/Code/Audio/AudioManager.cpp`
+**1. File**: `references/old-refs/jmarshall-win64-modern/Code/Audio/AudioManager.cpp`
 - Audio system initialization flow
 - How Miles functions map to OpenAL calls
 - Format conversion (Miles → PCM)
 
-**2. File**: `references/jmarshall-win64-modern/Code/Audio/MusicManager.cpp`
+**2. File**: `references/old-refs/jmarshall-win64-modern/Code/Audio/MusicManager.cpp`
 - Background music management
 - Audio format detection
 - Cross-platform stream handling
 
-**3. File**: `references/jmarshall-win64-modern/Code/Audio/OpenALAudioDevice.cpp`
+**3. File**: `references/old-refs/jmarshall-win64-modern/Code/Audio/OpenALAudioDevice.cpp`
 - Complete OpenAL device setup
 - Buffer/source management
 - Distance attenuation (3D audio)
@@ -304,6 +304,6 @@ public:
 See also:
 - [SESSION_38_BUILD_SUCCESS.md](../WORKDIR/support/SESSION_38_BUILD_SUCCESS.md) - Phase 1 technical details
 - [SIDEQUEST_CD_REMOVAL.md](../WORKDIR/reports/SIDEQUEST_CD_REMOVAL.md) - Portable gameplay context
-- `references/jmarshall-win64-modern/Code/Audio/` - Detailed OpenAL implementation
+- `references/old-refs/jmarshall-win64-modern/Code/Audio/` - Detailed OpenAL implementation
 - `docs/DEV_BLOG/2026-02-DIARY.md` - Session history
 

@@ -55,6 +55,7 @@
 #include "Common/Debug.h"
 #include "Common/GameState.h"
 #include "Common/GameStateMap.h"
+#include "Common/SagePatchIni.h"
 #include "Common/Science.h"
 #include "Common/FunctionLexicon.h"
 #include "Common/CommandLine.h"
@@ -498,6 +499,9 @@ void GameEngine::init()
 					"  KeyboardScrollSpeedFactor = 1.0\n"
 					"  ; ~5% more terrain drawn at max zoom to fix terrain pop-in.\n"
 					"  TerrainDrawDistanceScale = 1.05\n"
+					// GeneralsX @tweak felipebraz 20/06/2026 Default render FPS limit to 60 FPS in SagePatch.ini
+					"  UseFPSLimit = Yes\n"
+					"  FramesPerSecondLimit = 60\n"
 					"End\n"
 				);
 				fclose(f);
@@ -506,6 +510,9 @@ void GameEngine::init()
 
 		if (TheLocalFileSystem->doesFileExist(sagePatchPath.str()))
 		{
+			// GeneralsX @bugfix Codex 10/07/2026 Migrate FPS defaults without truncating later INI content.
+			SagePatchIni::migrateFpsDefaults(sagePatchPath.str());
+
 			ini.load(sagePatchPath, INI_LOAD_OVERWRITE, nullptr);
 		}
 	}
@@ -884,7 +891,7 @@ void GameEngine::resetSubsystems()
 /// -----------------------------------------------------------------------------------------------
 Bool GameEngine::canUpdateGameLogic()
 {
-	// Must be first.
+	// This updates the paused game status of the game logic.
 	TheGameLogic->preUpdate();
 
 	TheFramePacer->setTimeFrozen(isTimeFrozen());
@@ -979,20 +986,15 @@ void GameEngine::update()
 			}
 		}
 
-		const Bool canUpdate = canUpdateGameLogic();
-		const Bool canUpdateLogic = canUpdate && !TheFramePacer->isGameHalted() && !TheFramePacer->isTimeFrozen();
-		const Bool canUpdateScript = canUpdate && !TheFramePacer->isGameHalted();
-
-		if (canUpdateLogic)
+		// TheSuperHackers @info Ignores frozen time because the script engine needs updating in the logic update regardless.
+		if (canUpdateGameLogic())
 		{
-			TheGameClient->step();
 			TheGameLogic->UPDATE();
-		}
-		else if (canUpdateScript)
-		{
-			// TheSuperHackers @info Still update the Script Engine to allow
-			// for scripted camera movements while the time is frozen.
-			TheScriptEngine->UPDATE();
+
+			if (!TheFramePacer->isTimeFrozen())
+			{
+				TheGameClient->step();
+			}
 		}
 	}
 }

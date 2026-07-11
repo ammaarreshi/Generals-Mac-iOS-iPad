@@ -36,6 +36,8 @@
 
 #pragma once
 
+#include "WWMath/wwmath.h"
+
 template<class T> class TRect;
 
 /*
@@ -76,9 +78,9 @@ class TPoint2D {
 		TPoint2D<T> const operator - () const {return(TPoint2D<T>(-X, -Y));}
 
 		// Vector support functions.
-		T Length() const {return(T(sqrt(X*X + Y*Y)));}
+		T Length() const {return(T(WWMath::SqrtOrigin(X*X + Y*Y)));}
 		TPoint2D<T> const Normalize() const {
-			double len = sqrt(X*X + Y*Y);
+			double len = WWMath::SqrtOrigin(X*X + Y*Y);
 			if (len != 0.0) {
 				return(TPoint2D<T>((T)((double)X / len), (T)((double)Y / len)));
 			} else {
@@ -163,9 +165,9 @@ class TPoint3D : public TPoint2D<T> {
 		TPoint3D<T> const operator - () const {return(TPoint3D<T>(-X, -Y, -Z));}
 
 		// Vector support functions.
-		T Length() const {return(T(sqrt(X*X + Y*Y + Z*Z)));}
+		T Length() const {return(T(WWMath::SqrtOrigin(X*X + Y*Y + Z*Z)));}
 		TPoint3D<T> const Normalize() const {
-			double len = sqrt(X*X + Y*Y + Z*Z);
+			double len = WWMath::SqrtOrigin(X*X + Y*Y + Z*Z);
 			if (len != 0.0) {
 				return(TPoint3D<T>(X / len, Y / len, Z / len));
 			} else {

@@ -42,7 +42,8 @@ FramePacer::FramePacer()
 	m_logicTimeScaleFPS = LOGICFRAMES_PER_SECOND;
 	m_updateTime = 1.0f / (Real)BaseFps; // initialized to something to avoid division by zero on first use
 	m_enableFpsLimit = FALSE;
-	m_enableLogicTimeScale = FALSE;
+	// GeneralsX @tweak felipebraz 20/06/2026 Enable logic time scale by default to decouple gameplay tick rate from render FPS
+	m_enableLogicTimeScale = TRUE;
 	m_isTimeFrozen = FALSE;
 	m_isGameHalted = FALSE;
 }

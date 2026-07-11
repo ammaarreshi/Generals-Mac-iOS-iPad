@@ -35,3 +35,10 @@
 	* anywhere that touches DirectX inside GameLogic loops (LoadScreen).
 	*/
 void setFPMode();
+
+// GeneralsX @bugfix fbraz3 24/06/2026 Implement ScopedFPUGuard to restore FPU precision mode upon scope exit.
+class ScopedFPUGuard {
+public:
+	ScopedFPUGuard() {}
+	~ScopedFPUGuard() { setFPMode(); }
+};

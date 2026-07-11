@@ -85,7 +85,7 @@ Stabilize, optimize, and prepare for community release.
   - Invalid command-line arguments
 
 - [ ] **Compatibility tests** (multiple environments):
-  - Ubuntu 22.04, 24.04 (LTS targets)
+  - Ubuntu 22.04, 26.04 (LTS targets)
   - Fedora 40+ (latest kernel/drivers)
   - Arch Linux (rolling release, bleeding edge)
   - Steam Deck (Proton comparison: native vs. Wine)
@@ -231,7 +231,7 @@ Stabilize, optimize, and prepare for community release.
 
 **Target Distros**:
 - [ ] Ubuntu 22.04 LTS (stable, large user base)
-- [ ] Ubuntu 24.04 LTS (latest LTS)
+- [ ] Ubuntu 26.04 LTS (latest LTS)
 - [ ] Fedora 40+ (cutting edge, latest Mesa)
 - [ ] Arch Linux (rolling release, community favorite)
 - [ ] Debian 12 (stable, server-oriented but some gamers)
@@ -241,7 +241,7 @@ Stabilize, optimize, and prepare for community release.
 | Distro | Vulkan Driver | GPU | Status | Notes |
 |--------|---------------|-----|--------|-------|
 | Ubuntu 22.04 | Mesa RADV | AMD RX 6800 | ❓ | Test here |
-| Ubuntu 24.04 | Mesa RADV | AMD RX 6800 | ❓ | Test here |
+| Ubuntu 26.04 | Mesa RADV | AMD RX 6800 | ❓ | Test here |
 | Fedora 40 | Mesa RADV | AMD RX 7900 | ❓ | Test here |
 | Arch | Mesa RADV | AMD RX 580 | ❓ | Test here |
 | Ubuntu 22.04 | NVIDIA 550 | RTX 3080 | ❓ | Test here |
@@ -381,7 +381,7 @@ Phase 4 is **COMPLETE** when:
 - [ ] No memory leaks (Valgrind clean)
 - [ ] Case-insensitive filesystem working (no "file not found" errors)
 - [ ] Passes 2-hour stress test (no crashes, minimal performance drop)
-- [ ] Works on Ubuntu 22.04, 24.04, Fedora 40, Arch (verified)
+- [ ] Works on Ubuntu 22.04, 26.04, Fedora 40, Arch (verified)
 - [ ] AppImage or Flatpak release available
 - [ ] Documentation complete (`INSTALL_LINUX.md`, `TROUBLESHOOTING_LINUX.md`)
 - [ ] Community beta tested (>10 testers, feedback incorporated)

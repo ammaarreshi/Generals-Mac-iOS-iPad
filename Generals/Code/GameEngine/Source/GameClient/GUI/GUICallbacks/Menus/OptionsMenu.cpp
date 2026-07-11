@@ -579,6 +579,13 @@ static void saveOptions()
 	TheWritableGlobalData->m_useAlternateMouse = GadgetCheckBoxIsChecked(checkAlternateMouse);
 	(*pref)["UseAlternateMouse"] = TheWritableGlobalData->m_useAlternateMouse ? "yes" : "no";
 
+	// TheSuperHackers @todo Add check box ?
+	{
+		Bool useRightMouseScrollWithAlternateMouse = pref->getRightMouseScrollWithAlternateMouseEnabled();
+		(*pref)["UseRightMouseScrollWithAlternateMouse"] = useRightMouseScrollWithAlternateMouse ? "yes" : "no";
+		TheWritableGlobalData->m_useRightMouseScrollWithAlternateMouse = useRightMouseScrollWithAlternateMouse;
+	}
+
 	// TheSuperHackers @todo Add combo box ?
 	{
 		CursorCaptureMode mode = pref->getCursorCaptureMode();
@@ -810,6 +817,16 @@ static void saveOptions()
 		prefString = show ? "yes" : "no";
 		(*pref)["ShowMoneyPerMinute"] = prefString;
 		TheWritableGlobalData->m_showMoneyPerMinute = show;
+	}
+
+	//-------------------------------------------------------------------------------------------------
+	// Set Game Window Transition Speed Multiplier
+	{
+		Real speed = pref->getGameWindowTransitionSpeedMultiplier();
+		AsciiString prefString;
+		prefString.format("%g", speed);
+		(*pref)["GameWindowTransitionSpeedMultiplier"] = prefString;
+		TheWritableGlobalData->m_gameWindowTransitionSpeedMultiplier = speed;
 	}
 
 	//-------------------------------------------------------------------------------------------------

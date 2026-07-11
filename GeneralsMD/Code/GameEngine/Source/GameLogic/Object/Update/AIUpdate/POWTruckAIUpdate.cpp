@@ -480,7 +480,7 @@ void POWTruckAIUpdate::updateCollectingTarget()
 	{
 
 		// are we close enough to tell them to start moving to us
-		Real distSq = pow( us->getGeometryInfo().getBoundingSphereRadius() * 2.0f, 2 );
+		Real distSq = WWMath::PowOrigin( us->getGeometryInfo().getBoundingSphereRadius() * 2.0f, 2 );
 		if( ThePartitionManager->getDistanceSquared( us, target, FROM_CENTER_2D ) <= distSq )
 		{
 

@@ -297,7 +297,7 @@ UpdateSleepTime AssaultTransportAIUpdate::update()
 					else
 					{
 						//Increment the number of fighters and their position.
-						fighterCentroidPos.add( member->getPosition() );
+						fighterCentroidPos.add( *member->getPosition() );
 						fightingMembers++;
 
 						if( !ai->isMoving() )
@@ -343,14 +343,14 @@ UpdateSleepTime AssaultTransportAIUpdate::update()
 			//Calculate a vector from the target passed the fighters to be at a safe place
 			//to be as a transport.
 			Coord3D vector;
-			vector.set( &fighterCentroidPos );
-			vector.sub( &designatedTargetPos );
+			vector.set( fighterCentroidPos );
+			vector.sub( designatedTargetPos );
 			vector.normalize();
 			vector.scale( 150.0f );
 
 			Coord3D transportGoalPos;
-			transportGoalPos.set( &designatedTargetPos );
-			transportGoalPos.add( &vector );
+			transportGoalPos.set( designatedTargetPos );
+			transportGoalPos.add( vector );
 
 			Real distanceSqrd = ThePartitionManager->getDistanceSquared( transport, &transportGoalPos, FROM_CENTER_2D );
 			if( distanceSqrd > 40.0f * 40.0f )

@@ -112,11 +112,11 @@ public:
 	/// Get the waypoint's position
 	const Coord3D *getLocation() const { return &m_location;  }
 	/// Get the waypoint's first path label
-	AsciiString getPathLabel1() const { return m_pathLabel1;  }
+	const AsciiString& getPathLabel1() const { return m_pathLabel1;  }
 	/// Get the waypoint's second path label
-	AsciiString getPathLabel2() const { return m_pathLabel2;  }
+	const AsciiString& getPathLabel2() const { return m_pathLabel2;  }
 	/// Get the waypoint's third path label
-	AsciiString getPathLabel3() const { return m_pathLabel3;  }
+	const AsciiString& getPathLabel3() const { return m_pathLabel3;  }
 	/// Get bi-directionality.
 	Bool getBiDirectional() const { return m_biDirectional; }
 

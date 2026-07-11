@@ -2200,6 +2200,23 @@ TerrainTextureClass *WorldHeightMap::getFlatTexture(Int xCell, Int yCell, Int ce
 	return newTexture;
 }
 
+Region2D WorldHeightMap::getDrawRegion2D()
+{
+	// Get region in heightmap space
+	const Int loX = getDrawOrgX() - getBorderSize();
+	const Int loY = getDrawOrgY() - getBorderSize();
+	const Int hiX = loX + getDrawWidth();
+	const Int hiY = loY + getDrawHeight();
+
+	// Convert to world space
+	Region2D region;
+	region.lo.x = loX * MAP_XY_FACTOR;
+	region.lo.y = loY * MAP_XY_FACTOR;
+	region.hi.x = hiX * MAP_XY_FACTOR;
+	region.hi.y = hiY * MAP_XY_FACTOR;
+
+	return region;
+}
 
 WorldHeightMap::DrawArea WorldHeightMap::createDrawArea(Int xOrg, Int yOrg)
 {

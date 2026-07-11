@@ -55,6 +55,7 @@
 #include "Common/Debug.h"
 #include "Common/GameState.h"
 #include "Common/GameStateMap.h"
+#include "Common/SagePatchIni.h"
 #include "Common/Science.h"
 #include "Common/FunctionLexicon.h"
 #include "Common/CommandLine.h"
@@ -439,6 +440,9 @@ void GameEngine::init()
 					"  KeyboardScrollSpeedFactor = 1.0\n"
 					"  ; ~5% more terrain drawn at max zoom to fix terrain pop-in.\n"
 					"  TerrainDrawDistanceScale = 1.05\n"
+					// GeneralsX @tweak felipebraz 20/06/2026 Default render FPS limit to 60 FPS in SagePatch.ini
+					"  UseFPSLimit = Yes\n"
+					"  FramesPerSecondLimit = 60\n"
 					"End\n"
 				);
 				fclose(f);
@@ -447,6 +451,9 @@ void GameEngine::init()
 
 		if (TheLocalFileSystem->doesFileExist(sagePatchPath.str()))
 		{
+			// GeneralsX @bugfix Codex 10/07/2026 Migrate FPS defaults without truncating later INI content.
+			SagePatchIni::migrateFpsDefaults(sagePatchPath.str());
+
 			ini.load(sagePatchPath, INI_LOAD_OVERWRITE, nullptr);
 		}
 	}
@@ -721,7 +728,7 @@ void GameEngine::resetSubsystems()
 /// -----------------------------------------------------------------------------------------------
 Bool GameEngine::canUpdateGameLogic()
 {
-	// Must be first.
+	// This updates the paused game status of the game logic.
 	TheGameLogic->preUpdate();
 
 	TheFramePacer->setTimeFrozen(isTimeFrozen());
@@ -816,20 +823,15 @@ void GameEngine::update()
 			}
 		}	// end VERIFY_CRC block
 
-		const Bool canUpdate = canUpdateGameLogic();
-		const Bool canUpdateLogic = canUpdate && !TheFramePacer->isGameHalted() && !TheFramePacer->isTimeFrozen();
-		const Bool canUpdateScript = canUpdate && !TheFramePacer->isGameHalted();
-
-		if (canUpdateLogic)
+		// TheSuperHackers @info Ignores frozen time because the script engine needs updating in the logic update regardless.
+		if (canUpdateGameLogic())
 		{
-			TheGameClient->step();
 			TheGameLogic->UPDATE();
-		}
-		else if (canUpdateScript)
-		{
-			// TheSuperHackers @info Still update the Script Engine to allow
-			// for scripted camera movements while the time is frozen.
-			TheScriptEngine->UPDATE();
+
+			if (!TheFramePacer->isTimeFrozen())
+			{
+				TheGameClient->step();
+			}
 		}
 	}
 }
@@ -913,13 +915,10 @@ void GameEngine::execute()
 
 			TheFramePacer->update();
 
-			// GeneralsX @build BenderAI 18/02/2026 - Call display step and draw every frame
-			// This was missing, causing only magenta screen (no UI rendering)
-			if (TheDisplay != nullptr)
-			{
-				TheDisplay->step();
-				TheDisplay->draw();
-			}
+			// GeneralsX @bugfix MrMeeseeks 17/06/2026 Remove double-present call to fix uncapped FPS and game running too fast (matches Zero Hour / GeneralsMD)
+			// NOTE: TheDisplay->draw() is called via TheGameClient->UPDATE() above.
+			// GameClient::update() dispatches TheDisplay->DRAW() each frame.
+			// Do NOT add an extra draw() call here - it would double-present per frame.
 		}
 
 #ifdef PERF_TIMERS

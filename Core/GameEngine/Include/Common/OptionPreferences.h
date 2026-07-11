@@ -69,6 +69,7 @@ public:
 	void setOnlineIPAddress(UnsignedInt IP);
 	Bool getArchiveReplaysEnabled() const;
 	Bool getAlternateMouseModeEnabled();
+	Bool getRightMouseScrollWithAlternateMouseEnabled() const;
 	Bool getRetaliationModeEnabled();
 	Bool getDoubleClickAttackMoveEnabled();
 	Real getScrollFactor();
@@ -133,4 +134,5 @@ public:
 	Real getMinCameraHeight() const;
 	Real getCameraPitch() const;
 	Real getTerrainDrawDistanceScale() const;
+	Real getGameWindowTransitionSpeedMultiplier() const;
 };

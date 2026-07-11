@@ -2079,7 +2079,7 @@ bool GameLogic::onPlaceBeacon(MAYBE_UNUSED GameMessage *msg)
 	Coord3D pos = msg->getArgument( 0 )->location;
 	Region3D r;
 	TheTerrainLogic->getExtent(&r);
-	if (!r.isInRegionNoZ(&pos))
+	if (!r.isInRegionNoZ(pos))
 		pos = TheTerrainLogic->findClosestEdgePoint(&pos);
 	const ThingTemplate *thing = TheThingFactory->findTemplate( msgPlayer->getPlayerTemplate()->getBeaconTemplate() );
 
@@ -2393,15 +2393,8 @@ bool GameLogic::onLogicCrc(MAYBE_UNUSED GameMessage *msg)
 	Player *msgPlayer = getMessagePlayer(msg);
 	if (TheNetwork)
 	{
-		Int slotIndex = -1;
-		for (Int i=0; i<MAX_SLOTS; ++i)
-		{
-			if (msgPlayer->getPlayerType() == PLAYER_HUMAN && TheNetwork->getPlayerName(i) == msgPlayer->getPlayerDisplayName())
-			{
-				slotIndex = i;
-				break;
-			}
-		}
+		// GeneralsX @bugfix felipebraz 05/07/2026 Use pre-computed slot index to avoid string comparisons
+		Int slotIndex = ThePlayerList->getSlotIndex(msgPlayer->getPlayerIndex());
 
 		if (slotIndex < 0 || !TheNetwork->isPlayerConnected(slotIndex))
 			return false;

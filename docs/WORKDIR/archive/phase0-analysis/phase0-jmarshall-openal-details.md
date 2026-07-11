@@ -197,7 +197,7 @@ ALuint buffer = OpenALAudioLoader::load("sound.wav");
 ### Step 1: Copy OpenAL Implementation
 ```bash
 # From jmarshall reference
-cp -r references/jmarshall-win64-modern/Code/GameEngineDevice/OpenALAudioDevice/ \
+cp -r references/old-refs/jmarshall-win64-modern/Code/GameEngineDevice/OpenALAudioDevice/ \
       Core/GameEngineDevice/Source/
 ```
 

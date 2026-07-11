@@ -195,7 +195,6 @@ void LANAPI::handleGameAnnounce( LANMessage *msg, UnsignedInt senderIP )
 			delete game;
 			game = nullptr;
 		}
-
 		OnGameList( m_games );
 	//	if (game == m_currentGame && !m_inLobby)
 	//		OnSlotList(RET_OK, game);
@@ -297,6 +296,7 @@ void LANAPI::handleRequestJoin( LANMessage *msg, UnsignedInt senderIP )
 {
 	UnsignedInt responseIP = senderIP;	// need this cause the player may or may not be
 																			// in the player list at the sendMessage.
+	// GeneralsX @bugfix GitHubCopilot 12/04/2026 Keep join responses unicast so the joining client does not depend on LAN broadcast delivery.
 
 	if (msg->GameToJoin.gameIP != m_localIP)
 	{
@@ -444,7 +444,6 @@ void LANAPI::handleRequestJoin( LANMessage *msg, UnsignedInt senderIP )
 
 					// GeneralsX @bugfix BenderAI 13/02/2026 Wrap WideCharWindows with GetWindowsWideCharAsWchar (fighter19 pattern)
 					OnPlayerJoin(player, UnicodeString(GetWindowsWideCharAsWchar(msg->name)));
-					responseIP = 0;
 
 					break;
 				}

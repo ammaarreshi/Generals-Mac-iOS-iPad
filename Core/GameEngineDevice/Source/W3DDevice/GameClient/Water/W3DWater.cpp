@@ -1338,6 +1338,13 @@ void WaterRenderObjClass::update()
 //-------------------------------------------------------------------------------------------------
 void WaterRenderObjClass::replaceSkyboxTexture(const AsciiString& oldTexName, const AsciiString& newTextName)
 {
+	// GeneralsX @bugfix Claude 05/07/2026 Guard against null m_skyBox: replaceAssetTexture dereferences the
+	// render object unconditionally, so skip texture replacement when the skybox asset never loaded.
+	if (m_skyBox == nullptr)
+	{
+		return;
+	}
+
 	W3DAssetManager* assetManager = ((W3DAssetManager*)W3DAssetManager::Get_Instance());
 
 	assetManager->replacePrototypeTexture(m_skyBox, oldTexName.str(), newTextName.str());
@@ -1737,7 +1744,9 @@ void WaterRenderObjClass::Render(RenderInfoClass & rinfo)
 			break;
 	}
 
-	if (TheGlobalData && TheGlobalData->m_drawSkyBox)
+	// GeneralsX @bugfix Claude 05/07/2026 Guard against null m_skyBox: Create_Render_Obj("new_skybox") can fail
+	// when the skybox asset is unavailable (e.g. base Generals archives not found), causing a segfault here.
+	if (TheGlobalData && TheGlobalData->m_drawSkyBox && m_skyBox)
 	{	//center skybox around camera
 		Vector3 pos=rinfo.Camera.Get_Position();
 		pos.Z = TheGlobalData->m_skyBoxPositionZ;

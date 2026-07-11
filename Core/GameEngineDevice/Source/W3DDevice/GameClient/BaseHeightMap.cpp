@@ -665,7 +665,7 @@ relative to the ray so we can early exit as soon as we have a hit.
 //=============================================================================
 /** Return intersection of a ray with the heightmap mesh.
 This is a quick version that just checks every polygon inside
-a 2D bounding rectangle of the ray projected onto the heightfield plane.
+a 2D bounding rectangle of the ray projected onto the height map plane.
 For most of our view-picking cases the ray is almost perpendicular to the
 map plane so this is very quick (small bounding box).  But it can become slow
 for arbitrary rays such as those used in AI visibility checks(2 units on
@@ -678,19 +678,22 @@ bool BaseHeightMapRenderObjClass::Cast_Ray(RayCollisionTestClass & raytest)
 	Bool hit = false;
 	Int X,Y;
 	Vector3 normal,P0,P1,P2,P3;
+	Bool hasP0 = false;
+	Bool hasP1 = false;
 
 	if (!m_map)
 		return false;	//need valid pointer to heightmap samples
-//HeightSampleType *pData = m_map->getDataPtr();
-	//Clip ray to extents of heightfield
+
+	//Clip ray to extents of height map
 	AABoxClass hbox;
 	LineSegClass lineseg,lineseg2;
 	CastResultStruct	result;
-	Int StartCellX = 0;
-	Int EndCellX = 0;
- 	Int StartCellY = 0;
-	Int EndCellY = 0;
-	const Int overhang = 2*VERTEX_BUFFER_TILE_LENGTH + m_map->getBorderSizeInline(); // Allow picking past the edge for scrolling & objects.
+	Int startCellX = 0;
+	Int startCellY = 0;
+	Int endCellX = 0;
+	Int endCellY = 0;
+	const Int borderSize = m_map->getBorderSizeInline();
+	const Int overhang = 2*VERTEX_BUFFER_TILE_LENGTH + borderSize; // Allow picking past the edge for scrolling & objects.
  	Vector3 minPt(MAP_XY_FACTOR*(-overhang), MAP_XY_FACTOR*(-overhang), -MAP_XY_FACTOR);
 	Vector3 maxPt(MAP_XY_FACTOR*(m_map->getXExtent()+overhang),
 		MAP_XY_FACTOR*(m_map->getYExtent()+overhang), MAP_HEIGHT_SCALE*m_map->getMaxHeightValue()+MAP_XY_FACTOR);
@@ -699,50 +702,57 @@ bool BaseHeightMapRenderObjClass::Cast_Ray(RayCollisionTestClass & raytest)
 
 	lineseg=raytest.Ray;
 
-	//Set initial ray endpoints
-	P0 = raytest.Ray.Get_P0();
-	P1 = raytest.Ray.Get_P1();
-	result.ComputeContactPoint=true;
-
 	Int p;
 	for (p=0; p<3; p++) {
 		//find intersection point of ray and terrain bounding box
 		result.Reset();
 		result.ComputeContactPoint=true;
-		if (CollisionMath::Collide(lineseg,hbox,&result))
-		{	//ray intersects terrain or starts inside the terrain.
-			if (!result.StartBad)	//check if start point inside terrain
-				P0 = result.ContactPoint;			//make intersection point the new start of the ray.
+		Bool newP0 = false;
+		Bool newP1 = false;
 
-			//reverse direction of original ray and clip again to extent of
-			//heightmap
+		if (CollisionMath::Collide(lineseg,hbox,&result))
+		{
+			//ray intersects terrain or starts inside the terrain.
+			if (!result.StartBad)	//check if start point inside terrain
+			{
+				newP0 = P0 != result.ContactPoint;
+				hasP0 = true;
+				P0 = result.ContactPoint;	//make intersection point the new start of the ray.
+			}
+
+			//reverse direction of original ray and clip again to extent of heightmap
 			result.Fraction=1.0f;	//reset the result
 			result.StartBad=false;
 			lineseg2.Set(lineseg.Get_P1(),lineseg.Get_P0());	//reverse line segment
 			if (CollisionMath::Collide(lineseg2,hbox,&result))
-			{	if (!result.StartBad)	//check if end point inside terrain
-					P1 = result.ContactPoint;	//make intersection point the new end pont of ray
+			{
+				if (!result.StartBad)	//check if end point inside terrain
+				{
+					newP1 = P1 != result.ContactPoint;
+					hasP1 = true;
+					P1 = result.ContactPoint;	//make intersection point the new end point of ray
+				}
 			}
-		} else {
-			if (p==0) return(false);
-			break;
 		}
+
+		if (!newP0 || !newP1)
+			break;
 
 		// Take the 2D bounding box of ray and check heights
 		// inside this box for intersection.
 		if (P0.X > P1.X) {	//flip start/end points
-			StartCellX = REAL_TO_INT_FLOOR(P1.X/MAP_XY_FACTOR);
-			EndCellX = REAL_TO_INT_CEIL(P0.X/MAP_XY_FACTOR);
+			startCellX = REAL_TO_INT_FLOOR(P1.X/MAP_XY_FACTOR);
+			endCellX = REAL_TO_INT_CEIL(P0.X/MAP_XY_FACTOR);
 		}	else {
-			StartCellX = REAL_TO_INT_FLOOR(P0.X/MAP_XY_FACTOR);
-			EndCellX = REAL_TO_INT_CEIL(P1.X/MAP_XY_FACTOR);
+			startCellX = REAL_TO_INT_FLOOR(P0.X/MAP_XY_FACTOR);
+			endCellX = REAL_TO_INT_CEIL(P1.X/MAP_XY_FACTOR);
 		}
 		if (P0.Y > P1.Y) {	//flip start/end points
-			StartCellY = REAL_TO_INT_FLOOR(P1.Y/MAP_XY_FACTOR);
-			EndCellY = REAL_TO_INT_CEIL(P0.Y/MAP_XY_FACTOR);
+			startCellY = REAL_TO_INT_FLOOR(P1.Y/MAP_XY_FACTOR);
+			endCellY = REAL_TO_INT_CEIL(P0.Y/MAP_XY_FACTOR);
 		}	else {
-			StartCellY = REAL_TO_INT_FLOOR(P0.Y/MAP_XY_FACTOR);
-			EndCellY = REAL_TO_INT_CEIL(P1.Y/MAP_XY_FACTOR);
+			startCellY = REAL_TO_INT_FLOOR(P0.Y/MAP_XY_FACTOR);
+			endCellY = REAL_TO_INT_CEIL(P1.Y/MAP_XY_FACTOR);
 		}
 
 		Int i, j, minHt, maxHt;
@@ -750,33 +760,36 @@ bool BaseHeightMapRenderObjClass::Cast_Ray(RayCollisionTestClass & raytest)
 		minHt = m_map->getMaxHeightValue();
 		maxHt = 0;
 
-		for (j=StartCellY; j<=EndCellY; j++) {
-			for (i=StartCellX; i<=EndCellX; i++) {
-				Short cur = getClipHeight(i+m_map->getBorderSizeInline(),j+m_map->getBorderSizeInline());
+		for (j=startCellY; j<=endCellY; j++) {
+			for (i=startCellX; i<=endCellX; i++) {
+				Short cur = getClipHeight(i+borderSize,j+borderSize);
 				if (cur<minHt) minHt = cur;
 				if (maxHt<cur) maxHt = cur;
 			}
 		}
-		Vector3 minPt(MAP_XY_FACTOR*(StartCellX-1), MAP_XY_FACTOR*(StartCellY-1), MAP_HEIGHT_SCALE*(minHt-1));
-		Vector3 maxPt(MAP_XY_FACTOR*(EndCellX+1), MAP_XY_FACTOR*(EndCellY+1), MAP_HEIGHT_SCALE*(maxHt+1));
+		Vector3 minPt(MAP_XY_FACTOR*(startCellX-1), MAP_XY_FACTOR*(startCellY-1), MAP_HEIGHT_SCALE*(minHt-1));
+		Vector3 maxPt(MAP_XY_FACTOR*(endCellX+1), MAP_XY_FACTOR*(endCellY+1), MAP_HEIGHT_SCALE*(maxHt+1));
 		MinMaxAABoxClass mmbox(minPt, maxPt);
 		hbox.Init(mmbox);
 	}
+
+	if (!hasP0 || !hasP1)
+		return false;
 
 	raytest.Result->ComputeContactPoint=true;	//tell CollisionMath that we need point.
 
 	// Adjust indexes into the bordered height map.
 
-	StartCellX += m_map->getBorderSizeInline();
-	EndCellX += m_map->getBorderSizeInline();
-	StartCellY += m_map->getBorderSizeInline();
-	EndCellY += m_map->getBorderSizeInline();
+	startCellX += borderSize;
+	endCellX += borderSize;
+	startCellY += borderSize;
+	endCellY += borderSize;
 
 	Int offset;
 	for (offset = 1; offset < 5; offset *= 3) {
-		for (Y=StartCellY-offset; Y<=EndCellY+offset; Y++) {
+		for (Y=startCellY-offset; Y<=endCellY+offset; Y++) {
 
-			for (X=StartCellX-offset; X<=EndCellX+offset; X++) {
+			for (X=startCellX-offset; X<=endCellX+offset; X++) {
 				//test the 2 triangles in this cell
 				//	3-----2
 				//  |    /|
@@ -1383,7 +1396,7 @@ Bool BaseHeightMapRenderObjClass::getMaximumVisibleBox(const FrustumClass &frust
 	ClippedCorners[0]=frustum.Corners[0];
 	for (Int i=0; i<4; i++)
 	{	ClippedCorners[i]=frustum.Corners[i];
-		if (groundPlane.Compute_Intersection(frustum.Corners[i],frustum.Corners[i+4],&clipFraction))
+		if (groundPlane.Compute_Intersection(frustum.Corners[i],frustum.Corners[i+4],&clipFraction) == PlaneClass::INSIDE_SEGMENT)
 		{	//edge intersects the terrain
 			ClippedCorners[i+4]=frustum.Corners[i]+(frustum.Corners[i+4]-frustum.Corners[i])*clipFraction;
 		}

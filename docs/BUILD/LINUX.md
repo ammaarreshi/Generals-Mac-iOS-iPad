@@ -343,7 +343,7 @@ The Linux port **Phase 1 (Graphics) is COMPLETE** ✅
 - **Development Diary**: See [../DEV_BLOG/README.md](../DEV_BLOG/README.md)
 - **Phase Documentation**: See [../WORKDIR/phases/](../WORKDIR/phases/)
 - **Docker Scripts**: See [../../scripts/README_DOCKER_SCRIPTS.md](../../scripts/README_DOCKER_SCRIPTS.md)
-- **Reference Repos**: See [../../references/fighter19-dxvk-port/](../../references/fighter19-dxvk-port/)
+- **Reference Repos**: See [../../references/old-refs/fighter19-dxvk-port/](../../references/old-refs/fighter19-dxvk-port/)
 - **DXVK Architecture**: See [../WORKDIR/support/](../WORKDIR/support/)
 
 ## Support

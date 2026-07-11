@@ -118,8 +118,8 @@ Errors: FTP.cpp pre-existing portability issues (out of scope)
 **Option 1: Check fighter19 approach**
 ```bash
 # Does fighter19 compile FTP.cpp?
-find references/fighter19-dxvk-port -name "FTP.cpp"
-grep -r "WWDownload" references/fighter19-dxvk-port/*/CMakeLists.txt
+find references/old-refs/fighter19-dxvk-port -name "FTP.cpp"
+grep -r "WWDownload" references/old-refs/fighter19-dxvk-port/*/CMakeLists.txt
 
 # If NOT found: fighter19 excludes this file (multiplayer download not needed)
 # Action: Remove from CMakeLists.txt or add #ifdef guards
@@ -194,20 +194,20 @@ grep -rn "FTP_TRYING\|FTPSTAT_" Core/Libraries/Source/WWVegas/WWDownload/
 ## 📚 REFERENCE MATERIALS
 
 ### fighter19 DXVK Port (PRIMARY GRAPHICS REFERENCE)
-- **Location**: `references/fighter19-dxvk-port/`
+- **Location**: `references/old-refs/fighter19-dxvk-port/`
 - **Deepwiki**: `Fighter19/CnC_Generals_Zero_Hour`
 - **FreeType implementation**: `GeneralsMD/Code/Libraries/Source/WWVegas/WW3D2/Render2DSentence.cpp` (lines ~1500-1900)
 - **Key patterns**: Buffer management, pixel format, font metrics
 
 ### jmarshall Modern Port (AUDIO REFERENCE)
-- **Location**: `references/jmarshall-win64-modern/`
+- **Location**: `references/old-refs/jmarshall-win64-modern/`
 - **Deepwiki**: `jmarshall2323/CnC_Generals_Zero_Hour`
 - **Coverage**: Generals base game ONLY (NOT Zero Hour)
 - **OpenAL implementation**: `Code/Audio/` directory
 - **Note**: Must adapt for Zero Hour expansion features
 
 ### TheSuperHackers Main (UPSTREAM BASELINE)
-- **Location**: `references/thesuperhackers-main/`
+- **Location**: `references/old-refs/thesuperhackers-main/`
 - **Deepwiki**: `TheSuperHackers/GeneralsGameCode`
 - **Purpose**: Reference copy for merge conflict resolution
 - **Strategy**: Merge daily, keep our platform changes, their logic changes
@@ -260,8 +260,8 @@ git push origin linux-attempt
 
 **Find fighter19 approach to a file**:
 ```bash
-find references/fighter19-dxvk-port -name "filename.cpp"
-grep -rn "pattern" references/fighter19-dxvk-port/
+find references/old-refs/fighter19-dxvk-port -name "filename.cpp"
+grep -rn "pattern" references/old-refs/fighter19-dxvk-port/
 ```
 
 **Check if file is in build**:
@@ -271,7 +271,7 @@ grep "filename.cpp" */CMakeLists.txt **/**/CMakeLists.txt
 
 **Compare implementations**:
 ```bash
-diff -u Core/path/file.cpp references/fighter19-dxvk-port/Core/path/file.cpp
+diff -u Core/path/file.cpp references/old-refs/fighter19-dxvk-port/Core/path/file.cpp
 ```
 
 ---
@@ -397,7 +397,7 @@ grep "SAGE_USE_FREETYPE" build.log | grep "c++"
 3. **Research FTP.cpp**:
    ```bash
    # Check fighter19 approach
-   find references/fighter19-dxvk-port -name "FTP.cpp"
+   find references/old-refs/fighter19-dxvk-port -name "FTP.cpp"
    
    # Read class definition
    cat Core/Libraries/Source/WWVegas/WWDownload/ftp.h | less

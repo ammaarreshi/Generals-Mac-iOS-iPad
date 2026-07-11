@@ -132,7 +132,7 @@ set(GAMEENGINEDEVICE_SRC
 #    Source/W3DDevice/GameClient/GUI/Gadget/W3DTabControl.cpp
 #    Source/W3DDevice/GameClient/GUI/Gadget/W3DTextEntry.cpp
 #    Source/W3DDevice/GameClient/GUI/Gadget/W3DVerticalSlider.cpp
-    Source/W3DDevice/GameClient/GUI/GUICallbacks/W3DControlBar.cpp
+#    Source/W3DDevice/GameClient/GUI/GUICallbacks/W3DControlBar.cpp
     Source/W3DDevice/GameClient/GUI/GUICallbacks/W3DMainMenu.cpp
     Source/W3DDevice/GameClient/GUI/GUICallbacks/W3DMOTD.cpp
     Source/W3DDevice/GameClient/GUI/W3DGameFont.cpp
@@ -212,7 +212,8 @@ else()
     # GeneralsX @refactor fbraz3 31/03/2026 OpenALAudioDevice sources moved to Core/GameEngineDevice
     # OpenALAudioManager.cpp, OpenALAudioStream.cpp, OpenALAudioCache.cpp and FFmpegFile.cpp
     # are now provided by corei_gameenginedevice_private when SAGE_USE_OPENAL is enabled.
-    if(NOT SAGE_USE_OPENAL)
+    # GeneralsX @feature fbraz 11/06/2026 MiniAudio sources also provided by Core when SAGE_USE_MINIAUDIO is enabled.
+    if(NOT SAGE_USE_OPENAL AND NOT SAGE_USE_MINIAUDIO)
         list(APPEND GAMEENGINEDEVICE_SRC
             Source/OpenALAudioManager.cpp
         )
@@ -262,6 +263,14 @@ if(SAGE_USE_OPENAL)
     endif()
     target_link_libraries(z_gameenginedevice PUBLIC OpenAL::OpenAL)
     # GeneralsX @refactor fbraz3 31/03/2026 Private include for OpenALAudioCache.h now provided by corei_gameenginedevice_private
+endif()
+
+# GeneralsX @feature fbraz 11/06/2026 MiniAudio audio backend (alternative to OpenAL)
+if(SAGE_USE_MINIAUDIO)
+    if(NOT TARGET miniaudio_lib)
+        message(FATAL_ERROR "SAGE_USE_MINIAUDIO is ON but miniaudio_lib target not found. Include cmake/miniaudio.cmake first.")
+    endif()
+    target_link_libraries(z_gameenginedevice PUBLIC miniaudio_lib)
 endif()
 
 # Phase 3: Video playback with FFmpeg (configured by Core/GameEngineDevice when RTS_BUILD_OPTION_FFMPEG=ON)

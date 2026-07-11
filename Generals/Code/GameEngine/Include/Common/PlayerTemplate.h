@@ -82,6 +82,7 @@ public:
 	UnicodeString getDisplayName() const { return m_displayName; }
 
 	AsciiString getSide() const { return m_side; }
+	AsciiString getBaseSide() const  { return m_baseSide; }
 
 	/// return the tech tree for the player.
 	const Handicap *getHandicap() const { return &m_handicap; }
@@ -142,7 +143,7 @@ private:
 
 	NameKeyType			m_nameKey;
 	UnicodeString		m_displayName;
-	AsciiString			m_side;
+	AsciiString			m_side, m_baseSide;
 	Handicap				m_handicap;						///< initial baseline for Player capabilities
 	Money						m_money;							///< starting credits, if any
 	RGBColor				m_preferredColor;			///< our preferred starting color

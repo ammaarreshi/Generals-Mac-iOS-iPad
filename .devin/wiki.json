@@ -5,7 +5,7 @@
       "author": "GeneralsX Team"
     },
     {
-      "content": "Three reference repositories guide the port: (1) TheSuperHackers (upstream Windows baseline, stable VC6 builds), (2) fighter19's DXVK port (references/fighter19-dxvk-port/ — primary graphics/platform reference, fully functional on Linux), (3) jmarshall's modern port (references/jmarshall-win64-modern/ — primary audio/OpenAL reference, Generals-only). Platform-specific code must be isolated to Core/GameEngineDevice/ and Core/Libraries/Source/Platform/. Never put platform-specific code inside gameplay logic (GameLogic/). SDL3 is the unified platform layer — no native POSIX, Win32, or Cocoa calls in game code.",
+      "content": "Three reference repositories guide the port: (1) TheSuperHackers (upstream Windows baseline, stable VC6 builds), (2) fighter19's DXVK port (references/old-refs/fighter19-dxvk-port/ — primary graphics/platform reference, fully functional on Linux), (3) jmarshall's modern port (references/old-refs/jmarshall-win64-modern/ — primary audio/OpenAL reference, Generals-only). Platform-specific code must be isolated to Core/GameEngineDevice/ and Core/Libraries/Source/Platform/. Never put platform-specific code inside gameplay logic (GameLogic/). SDL3 is the unified platform layer — no native POSIX, Win32, or Cocoa calls in game code.",
       "author": "GeneralsX Team"
     },
     {
@@ -13,7 +13,7 @@
       "author": "GeneralsX Team"
     },
     {
-      "content": "Platform release status: Linux (active release — DXVK graphics working, OpenAL audio working), macOS ARM64 (active release — DXVK + MoltenVK + SDL3 + OpenAL), Windows MinGW-w64 (backlog — tracked in issue #29). Documentation structure: docs/DEV_BLOG/ (monthly diaries, newest-first), docs/WORKDIR/planning/ (strategic documents), docs/WORKDIR/lessons/ (lessons learned), docs/WORKDIR/reports/ (session reports), docs/WORKDIR/support/ (technical discoveries), docs/WORKDIR/audit/ (audit records). Every user-facing code change needs a GeneralsX annotation comment: // GeneralsX @keyword author DD/MM/YYYY Description.",
+      "content": "Platform release status: Linux (active release — DXVK graphics working, OpenAL audio working), macOS ARM64 (active release — DXVK + MoltenVK + SDL3 + OpenAL), Windows MinGW-w64 (backlog — tracked in issue #29). Documentation structure: docs/WORKLOG/ (monthly diaries, newest-first), docs/WORKDIR/planning/ (strategic documents), docs/WORKDIR/lessons/ (lessons learned), docs/WORKDIR/reports/ (session reports), docs/WORKDIR/support/ (technical discoveries), docs/WORKDIR/audit/ (audit records). Every user-facing code change needs a GeneralsX annotation comment: // GeneralsX @keyword author DD/MM/YYYY Description.",
       "author": "GeneralsX Team"
     },
     {
@@ -49,12 +49,12 @@
     },
     {
       "title": "Rendering Device Layer",
-      "purpose": "Document Core/GameEngineDevice/: current DirectX8 implementation, entry points, device initialization, and how the W3D renderer is structured. This is the primary integration point for DXVK. Reference fighter19's changes in references/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/ as the porting target.",
+      "purpose": "Document Core/GameEngineDevice/: current DirectX8 implementation, entry points, device initialization, and how the W3D renderer is structured. This is the primary integration point for DXVK. Reference fighter19's changes in references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/ as the porting target.",
       "parent": "Core Engine Architecture"
     },
     {
       "title": "Audio System",
-      "purpose": "Document the current Miles Sound System integration: where it initializes, how it interfaces with the game engine (Core/GameEngine/Audio/). Document jmarshall's OpenAL implementation in references/jmarshall-win64-modern/Code/Audio/ as the cross-platform replacement target. Highlight Zero Hour-specific audio hooks that differ from base Generals.",
+      "purpose": "Document the current Miles Sound System integration: where it initializes, how it interfaces with the game engine (Core/GameEngine/Audio/). Document jmarshall's OpenAL implementation in references/old-refs/jmarshall-win64-modern/Code/Audio/ as the cross-platform replacement target. Highlight Zero Hour-specific audio hooks that differ from base Generals.",
       "parent": "Core Engine Architecture"
     },
     {
@@ -114,12 +114,12 @@
     },
     {
       "title": "Development Workflow",
-      "purpose": "Document the day-to-day development process: upstream merge from TheSuperHackers, code annotation convention (// GeneralsX @keyword author DD/MM/YYYY Description), documentation update requirement before commits (DEV_BLOG diary), lessons-learned workflow in docs/WORKDIR/lessons/, and VS Code tasks.",
+      "purpose": "Document the day-to-day development process: upstream merge from TheSuperHackers, code annotation convention (// GeneralsX @keyword author DD/MM/YYYY Description), documentation update requirement before commits (WORKLOG diary), lessons-learned workflow in docs/WORKDIR/lessons/, and VS Code tasks.",
       "parent": null
     },
     {
       "title": "Documentation Structure",
-      "purpose": "Document docs/ layout: DEV_BLOG/ (monthly diaries, newest-first format), WORKDIR/planning/ (strategic documents and roadmaps), WORKDIR/reports/ (session reports), WORKDIR/support/ (technical discoveries), WORKDIR/audit/ (audit and verification), WORKDIR/lessons/ (lessons learned for future sessions), ETC/ (reference/historical materials), KNOWN_ISSUES/. Active work goes to WORKDIR/; diary-only entries go to DEV_BLOG/; issues are tracked in GitHub, not markdown files.",
+      "purpose": "Document docs/ layout: WORKLOG/ (monthly diaries, newest-first format), WORKDIR/planning/ (strategic documents and roadmaps), WORKDIR/reports/ (session reports), WORKDIR/support/ (technical discoveries), WORKDIR/audit/ (audit and verification), WORKDIR/lessons/ (lessons learned for future sessions), ETC/ (reference/historical materials), KNOWN_ISSUES/. Active work goes to WORKDIR/; diary-only entries go to WORKLOG/; issues are tracked in GitHub, not markdown files.",
       "parent": "Development Workflow"
     }
   ]

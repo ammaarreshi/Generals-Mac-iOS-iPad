@@ -1381,18 +1381,8 @@ GameWindow *GameWindowManager::winCreate( GameWindow *parent,
 		window->winSetInstanceData( instData );
 
 	// set default font
-	// GeneralsX @tweak GitHubCopilot 27/05/2026 Trace window default font resolution to diagnose localized font propagation.
 	if (TheGlobalLanguageData && TheGlobalLanguageData->m_defaultWindowFont.name.isNotEmpty())
 	{
-		char log_buffer[512];
-		sprintf(log_buffer,
-			"[GX-ISSUE144] WinCreate default font localized name=%s size=%d bold=%d window=%p",
-			TheGlobalLanguageData->m_defaultWindowFont.name.str(),
-			TheGlobalLanguageData->m_defaultWindowFont.size,
-			TheGlobalLanguageData->m_defaultWindowFont.bold,
-			window);
-		fprintf(stderr, "%s\n", log_buffer);
-
 		window->winSetFont( winFindFont(
 			TheGlobalLanguageData->m_defaultWindowFont.name,
 			TheGlobalLanguageData->m_defaultWindowFont.size,
@@ -1400,9 +1390,6 @@ GameWindow *GameWindowManager::winCreate( GameWindow *parent,
 	}
 	else
 	{
-		char log_buffer[512];
-		sprintf(log_buffer, "[GX-ISSUE144] WinCreate default font fallback Times New Roman size=14 bold=0 window=%p", window);
-		fprintf(stderr, "%s\n", log_buffer);
 		window->winSetFont( winFindFont( "Times New Roman", 14, FALSE ) );
 	}
 
@@ -2867,15 +2854,6 @@ void GameWindowManager::assignDefaultGadgetLook( GameWindow *gadget,
 	{
 		if (TheGlobalLanguageData && TheGlobalLanguageData->m_defaultWindowFont.name.isNotEmpty())
 		{
-			char log_buffer[512];
-			sprintf(log_buffer,
-				"[GX-ISSUE144] assignDefaultGadgetLook localized font name=%s size=%d bold=%d gadget=%p",
-				TheGlobalLanguageData->m_defaultWindowFont.name.str(),
-				TheGlobalLanguageData->m_defaultWindowFont.size,
-				TheGlobalLanguageData->m_defaultWindowFont.bold,
-				gadget);
-			fprintf(stderr, "%s\n", log_buffer);
-
 			gadget->winSetFont( winFindFont(
 				TheGlobalLanguageData->m_defaultWindowFont.name,
 				TheGlobalLanguageData->m_defaultWindowFont.size,
@@ -2883,9 +2861,6 @@ void GameWindowManager::assignDefaultGadgetLook( GameWindow *gadget,
 		}
 		else
 		{
-			char log_buffer[512];
-			sprintf(log_buffer, "[GX-ISSUE144] assignDefaultGadgetLook fallback font Times New Roman size=14 bold=0 gadget=%p", gadget);
-			fprintf(stderr, "%s\n", log_buffer);
 			gadget->winSetFont( winFindFont( "Times New Roman", 14, FALSE ) );
 		}
 	}

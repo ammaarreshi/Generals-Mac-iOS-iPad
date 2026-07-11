@@ -65,20 +65,20 @@ jobs:
       - name: Install Dependencies
         run: |
           echo "Installing macOS build dependencies..."
-          
+
           # Update Homebrew to ensure fresh formulas
           brew update
-          
+
           # Ensure xcode-select is properly configured (needed for clang/clang++)
           xcode-select --install 2>/dev/null || echo "xcode-select already installed"
           xcode-select -p || (echo "❌ Xcode command-line tools not installed"; exit 1)
-          
+
           # Build tools
-          brew install cmake ninja meson pkg-config
+          brew install cmake ninja meson pkg-config ccache
 
           # Autotools (required by vcpkg when building packages like gperf from source)
           brew install autoconf autoconf-archive automake libtool
-          
+
           # FFmpeg (required by GameEngineDevice for video playback via pkg-config)
           # Note: FFmpeg brings most codec/protocol dependencies, but we explicitly list
           # discovered dylibs to ensure no optional deps are missed in bundle step
@@ -86,10 +86,10 @@ jobs:
             libbluray gnutls librist srt libssh zeromq \
             libvpx webp jpeg-xl dav1d opencore-amr snappy aom libvmaf lame \
             xz aribb24 libpng
-          
+
           # Freetype + Fontconfig (required by font rendering)
           brew install freetype fontconfig
-          
+
           # NOTE: GLM is intentionally NOT installed via Homebrew.
           # It is fetched via CMake FetchContent in cmake/glm.cmake (tag 1.0.3).
           # Installing a system GLM causes glm::glm vs glm::glm-header-only target
@@ -121,20 +121,28 @@ jobs:
 
           echo "Build tools installed"
 
+      - name: Cache Vulkan SDK
+        id: cache-vulkan
+        uses: actions/cache@v5
+        with:
+          path: ~/VulkanSDK
+          key: vulkan-sdk-macos-1.4.341.1
+
       - name: Install Vulkan SDK
+        if: steps.cache-vulkan.outputs.cache-hit != 'true'
         run: |
           echo "Installing Vulkan SDK (required for DXVK + MoltenVK)..."
-          
+
           # Strategy 1: Direct download of versioned SDK with SHA256 validation (PREFERRED)
           VULKAN_ZIP="/tmp/vulkansdk-macos-1.4.341.1.zip"
           VULKAN_URL="https://sdk.lunarg.com/sdk/download/1.4.341.1/mac/vulkansdk-macos-1.4.341.1.zip"
           EXPECTED_SHA256="632cbe96c8ed6ed00c6ce25e3a7738c466134f76586e1c51f1419410d7f9042e"
-          
+
           echo "Attempting versioned Vulkan SDK download (1.4.341.1)..."
           for attempt in 1 2 3; do
             echo "Download attempt $attempt/3..."
             rm -f "$VULKAN_ZIP"
-            
+
             if curl -L --max-time 120 --retry 2 -o "$VULKAN_ZIP" "$VULKAN_URL" 2>&1; then
               # Validate SHA256
               ACTUAL_SHA256=$(shasum -a 256 "$VULKAN_ZIP" | awk '{print $1}')
@@ -154,14 +162,14 @@ jobs:
             else
               echo "❌ Download failed"
             fi
-            
+
             if [ $attempt -lt 3 ]; then sleep 15; fi
           done
-          
+
           # Extract and install if valid ZIP
           if [ -f "$VULKAN_ZIP" ] && [ "$(stat -f%z "$VULKAN_ZIP" 2>/dev/null || echo 0)" -gt 100000000 ]; then
             echo "Extracting Vulkan SDK ZIP..."
-            
+
             # Verify ZIP integrity before extraction
             echo "Validating ZIP file integrity..."
             if ! unzip -t "$VULKAN_ZIP" > /dev/null 2>&1; then
@@ -171,19 +179,19 @@ jobs:
               VULKAN_SDK=""
             else
               echo "✅ ZIP file is valid"
-              
+
               # List ZIP contents for debugging
               echo "ZIP contents:"
               unzip -l "$VULKAN_ZIP" | head -20
-              
+
               # Extract with verbose output (not quiet)
               mkdir -p /tmp/vulkan-extract
               unzip -o "$VULKAN_ZIP" -d /tmp/vulkan-extract
-              
+
               # List extracted contents
               echo "Extracted structure:"
               find /tmp/vulkan-extract -type f -o -type d | head -30
-              
+
               # Strategy 1: Look for .app bundle (primary)
               VULKAN_APP=$(find /tmp/vulkan-extract -name "*.app" -type d 2>/dev/null | head -1)
               if [ -n "$VULKAN_APP" ]; then
@@ -199,7 +207,7 @@ jobs:
               else
                 echo "⚠️ No .app bundle found"
               fi
-              
+
               # Strategy 2: Look for direct executable if no .app found
               if [ -z "$VULKAN_EXECUTABLE" ]; then
                 VULKAN_EXECUTABLE=$(find /tmp/vulkan-extract -name "vulkansdk-macOS-*" -type f -executable 2>/dev/null | head -1)
@@ -214,7 +222,7 @@ jobs:
                   fi
                 fi
               fi
-              
+
               # Execute installer if found
               if [ -n "$VULKAN_EXECUTABLE" ] && [ -f "$VULKAN_EXECUTABLE" ]; then
                 INSTALL_TARGET="$HOME/VulkanSDK/1.4.341.1"
@@ -225,7 +233,7 @@ jobs:
                   --default-answer \
                   --confirm-command install
                 INSTALL_STATUS=$?
-                
+
                 if [ $INSTALL_STATUS -eq 0 ]; then
                   # Normalize to platform subdirectory (CMake FindVulkan expects VULKAN_SDK/lib, not VULKAN_SDK/macOS/lib)
                   if [ -d "$INSTALL_TARGET/macOS" ]; then
@@ -243,13 +251,13 @@ jobs:
                 echo "❌ No installer found"
                 VULKAN_SDK=""
               fi
-              
+
               rm -rf /tmp/vulkan-extract "$VULKAN_ZIP"
             fi
           else
             echo "⚠️ Vulkan SDK versioned download/validation failed; trying Homebrew fallback"
           fi
-          
+
           # Strategy 2: Homebrew fallback (if versioned download failed)
           if [ -z "$VULKAN_SDK" ] || [ ! -d "$VULKAN_SDK" ]; then
             echo "Attempting Homebrew installation (may be older version)..."
@@ -263,38 +271,57 @@ jobs:
               fi
             fi
           fi
-          
-          # Set environment variables for downstream steps
+
+      - name: Set Vulkan SDK Environment Variable
+        run: |
+          VULKAN_SDK=""
+
+          # 1. Try LunarG installer location
+          if [ -d "$HOME/VulkanSDK/1.4.341.1/macOS" ]; then
+            VULKAN_SDK="$HOME/VulkanSDK/1.4.341.1/macOS"
+          fi
+
+          # 2. Try generic search in ~/VulkanSDK
           if [ -z "$VULKAN_SDK" ] || [ ! -d "$VULKAN_SDK" ]; then
-            # Last resort: search for any installed SDK, prefer macOS subdir
             for candidate in $(find $HOME/VulkanSDK -maxdepth 2 -type d -name "macOS" 2>/dev/null); do
               VULKAN_SDK="$candidate"
               break
             done
           fi
 
-          # Normalize: if VULKAN_SDK points to version root (has macOS subdir), use macOS subdir
-          if [ -d "$VULKAN_SDK/macOS" ] && [ -f "$VULKAN_SDK/macOS/lib/libvulkan.dylib" ]; then
-            VULKAN_SDK="$VULKAN_SDK/macOS"
-            echo "Normalized VULKAN_SDK to platform subdirectory"
-          fi
-          
+          # 3. Try Homebrew fallback path
           if [ -z "$VULKAN_SDK" ] || [ ! -d "$VULKAN_SDK" ]; then
-            echo "⚠️ Vulkan SDK not found in standard locations; using default path (system Vulkan may be used)"
+            VULKAN_SDK="$(brew --prefix vulkan-sdk 2>/dev/null)/macOS"
+            if [ ! -d "$VULKAN_SDK" ]; then
+              VULKAN_SDK="/usr/local/Caskroom/vulkan-sdk/latest/VulkanSDK"
+            fi
+          fi
+
+          # 4. Fallback default
+          if [ -z "$VULKAN_SDK" ] || [ ! -d "$VULKAN_SDK" ]; then
+            echo "⚠️ Vulkan SDK not found in standard locations; using default path"
             VULKAN_SDK="$HOME/VulkanSDK"
           fi
-          
+
           echo "VULKAN_SDK=$VULKAN_SDK" >> $GITHUB_ENV
           echo "✅ Vulkan SDK path set to: $VULKAN_SDK"
-          
+
           # Verify MoltenVK presence
           if [ -f "$VULKAN_SDK/lib/libMoltenVK.dylib" ]; then
             echo "✅ MoltenVK found at $VULKAN_SDK/lib/libMoltenVK.dylib"
           else
             echo "⚠️ MoltenVK not found at $VULKAN_SDK/lib/libMoltenVK.dylib"
             echo "Checking for alternate locations..."
-            find "$(dirname $VULKAN_SDK)" -name "libMoltenVK*" 2>/dev/null | head -5 || echo "(none found)"
+            find "$(dirname $VULKAN_SDK 2>/dev/null || echo $HOME)" -name "libMoltenVK*" 2>/dev/null | head -5 || echo "(none found)"
           fi
+
+      - name: Cache ccache
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/ccache
+          key: ccache-macos-${{ matrix.game.id }}-${{ inputs.preset }}-${{ github.sha }}
+          restore-keys: |
+            ccache-macos-${{ matrix.game.id }}-${{ inputs.preset }}-
 
       - name: Configure CMake (macOS)
         env:
@@ -303,6 +330,8 @@ jobs:
           VCPKG_DEFAULT_TRIPLET: arm64-osx
           CC: clang
           CXX: clang++
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
         run: |
           mkdir -p logs
           echo "VULKAN_SDK=$VULKAN_SDK"
@@ -320,7 +349,7 @@ jobs:
           LOG_FILE="logs/build_${{ matrix.game.log_suffix }}_macos.log"
           cmake --build build/${{ inputs.preset }} --target ${{ matrix.game.target }} -j $NPROC 2>&1 | tee "${LOG_FILE}"
           BUILD_STATUS=${PIPESTATUS[0]}
-          
+
           if [ $BUILD_STATUS -eq 0 ]; then
             echo "✅ Build completed successfully"
           else
@@ -336,7 +365,7 @@ jobs:
             echo "✅ Binary built: ${{ matrix.game.output }}"
             file "$BINARY"
             ls -lh "$BINARY"
-            
+
             # Verify it's a valid Mach-O binary
             if file "$BINARY" | grep -q "Mach-O"; then
               echo "✅ Valid Mach-O binary"

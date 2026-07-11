@@ -447,7 +447,7 @@ void LayersList::updateUIFromList()
 		}
 
 		for (ListPolygonTriggerPtrIt triggerIt = layersIt->polygonTriggersInLayer.begin(); triggerIt != layersIt->polygonTriggersInLayer.end(); ++triggerIt) {
-			AsciiString uniqueID = (*triggerIt)->getTriggerName();
+			const AsciiString& uniqueID = (*triggerIt)->getTriggerName();
 			pTree->InsertItem(uniqueID.str(), iconToShow, iconToShow, thisBranch);
 		}
 	}
@@ -609,7 +609,7 @@ void LayersList::addPolygonTriggerToLayer(IN PolygonTrigger *triggerToAdd, IN Li
 	// only update this object.
 	HTREEITEM hItem = findTreeLayerNamed(layerToAddTo->layerName);
 	if (hItem) {
-		AsciiString triggerName = triggerToAdd->getTriggerName();
+		const AsciiString& triggerName = triggerToAdd->getTriggerName();
 		int iconToShow = (layerToAddTo->show ? 0 : 1);
 		mTree->InsertItem(triggerName.str(), iconToShow, iconToShow, hItem);
 	}
@@ -691,7 +691,7 @@ void LayersList::removePolygonTriggerFromLayer(IN PolygonTrigger *triggerToRemov
 	// only remove this object
 	HTREEITEM layer = findTreeLayerNamed(layerToRemoveFrom->layerName);
 	if (layer) {
-		AsciiString triggerUID = (*triggerBeingRemove)->getTriggerName();
+		const AsciiString& triggerUID = (*triggerBeingRemove)->getTriggerName();
 		HTREEITEM itemToDelete = findTreeObjectNamed(triggerUID.str(), layer);
 		if (itemToDelete) {
 			mTree->DeleteItem(itemToDelete);
@@ -1227,7 +1227,7 @@ Bool LayersList::findAndSelectPolygonTrigger(AsciiString selectedItemAsciiString
 	PolygonTrigger *trigger = PolygonTrigger::getFirstPolygonTrigger();
 
 	while (trigger) {
-		AsciiString triggerName = trigger->getTriggerName();
+		const AsciiString& triggerName = trigger->getTriggerName();
 
 		if (triggerName.compareNoCase(selectedItemAsciiString) == 0) {
 			// Found it... select this object
@@ -1307,7 +1307,7 @@ PolygonTrigger* LayersList::findPolygonTriggerByUID(AsciiString triggerIDToFind)
 	PolygonTrigger *trigger = PolygonTrigger::getFirstPolygonTrigger();
 
 	while (trigger) {
-		AsciiString triggerName = trigger->getTriggerName();
+		const AsciiString& triggerName = trigger->getTriggerName();
 
 		if (triggerName.compareNoCase(triggerIDToFind) == 0) {
 			return (trigger);

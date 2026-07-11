@@ -119,8 +119,8 @@ UpdateSleepTime FloatUpdate::update()
 	{
 
 		Real angle = INT_TO_REAL(TheGameLogic->getFrame());
-		Real yaw = sin(angle * 0.0291f) * 0.05f;
-		Real pitch = sin(angle * 0.0515f) * 0.05f;
+		Real yaw = WWMath::SinTrig(angle * 0.0291f) * 0.05f;
+		Real pitch = WWMath::SinTrig(angle * 0.0515f) * 0.05f;
 
 		Matrix3D mx = *draw->getInstanceMatrix();
 

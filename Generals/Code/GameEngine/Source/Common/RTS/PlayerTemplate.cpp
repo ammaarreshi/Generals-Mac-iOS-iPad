@@ -68,6 +68,7 @@
 	static const FieldParse TheFieldParseTable[] =
 	{
 		{ "Side",											INI::parseAsciiString,													nullptr, offsetof( PlayerTemplate, m_side ) },
+		{ "BaseSide",								INI::parseAsciiString,													nullptr, offsetof( PlayerTemplate, m_baseSide ) },
 		{ "PlayableSide",							INI::parseBool,																	nullptr, offsetof( PlayerTemplate, m_playableSide ) },
 		{ "DisplayName",							INI::parseAndTranslateLabel,										nullptr, offsetof( PlayerTemplate, m_displayName) },
 		{ "StartMoney",								PlayerTemplate::parseStartMoney,								nullptr, offsetof( PlayerTemplate, m_money ) },

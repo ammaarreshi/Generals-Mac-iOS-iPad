@@ -170,5 +170,8 @@ work that this repo inherits everywhere:
   controls, app lifecycle, packaging) and engine fixes, offered upstream
 - **DXVK, MoltenVK, SDL, OpenAL Soft, FFmpeg, Liberation Fonts** — the load-bearing walls
 
-Engine code **GPL v3** (EA's source release → the chain above → this fork). Game
-assets: not included, not licensed here.
+Engine code **[GPL v3](LICENSE.md)** (EA's source release → the chain above → this
+fork). Game assets: not included, not licensed here.
+
+EA has not endorsed and does not support this product. All trademarks are the
+property of their respective owners.

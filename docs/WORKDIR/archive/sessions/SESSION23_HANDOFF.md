@@ -297,13 +297,13 @@ char* _strupr(char* str) { /* implementation */ }
 ## 📚 REFERENCE MATERIALS
 
 ### fighter19 DXVK Port
-- **Location**: `references/fighter19-dxvk-port/`
+- **Location**: `references/old-refs/fighter19-dxvk-port/`
 - **Deepwiki**: `Fighter19/CnC_Generals_Zero_Hour`
 - **Key insight**: fighter19 does NOT have WWDownload directory (excluded in their port)
 - **Lesson**: We chose different strategy (keep WWDownload for LAN support)
 
 ### jmarshall Modern Port
-- **Location**: `references/jmarshall-win64-modern/`
+- **Location**: `references/old-refs/jmarshall-win64-modern/`
 - **Deepwiki**: `jmarshall2323/CnC_Generals_Zero_Hour`
 - **Coverage**: Generals base game ONLY (NOT Zero Hour)
 - **Note**: May have different WWDownload handling (investigate if needed)
@@ -362,13 +362,13 @@ git push origin linux-attempt
 
 **Find file in references**:
 ```bash
-find references/fighter19-dxvk-port -name "filename.cpp"
-find references/jmarshall-win64-modern -name "filename.cpp"
+find references/old-refs/fighter19-dxvk-port -name "filename.cpp"
+find references/old-refs/jmarshall-win64-modern -name "filename.cpp"
 ```
 
 **Compare implementations**:
 ```bash
-diff -u Core/path/file.cpp references/fighter19-dxvk-port/Core/path/file.cpp
+diff -u Core/path/file.cpp references/old-refs/fighter19-dxvk-port/Core/path/file.cpp
 ```
 
 **Check if macro defined**:

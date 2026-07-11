@@ -113,7 +113,7 @@ protected:
 
 	static NameKeyType makeDecoratedNameKey(const AsciiString& name, ModuleType type);
 
-	typedef std::map< NameKeyType, ModuleTemplate, std::less<NameKeyType> > ModuleTemplateMap;
+	typedef std::map< NameKeyType, ModuleTemplate, std::less<NameKeyType>/**/> ModuleTemplateMap;
 	typedef std::vector<const ModuleData*> ModuleDataList;
 
 	ModuleTemplateMap			m_moduleTemplateMap;

@@ -103,7 +103,7 @@ struct OpenAudioFile
 	const AudioEventInfo *m_eventInfo;	// Not mutable, unlike the one on AudioEventRTS.
 };
 
-typedef std::hash_map< AsciiString, OpenAudioFile, rts::hash<AsciiString>, rts::equal_to<AsciiString> > OpenFilesHash;
+typedef std::hash_map< AsciiString, OpenAudioFile, rts::hash<AsciiString>, rts::equal_to<AsciiString>/**/> OpenFilesHash;
 typedef OpenFilesHash::iterator OpenFilesHashIt;
 
 class AudioFileCache
@@ -195,6 +195,8 @@ class MilesAudioManager : public AudioManager
 		virtual UnsignedInt getNum2DSamples() const override;
 		virtual UnsignedInt getNum3DSamples() const override;
 		virtual UnsignedInt getNumStreams() const override;
+		virtual UnsignedInt getNumAvailable2DSamples() const override;
+		virtual UnsignedInt getNumAvailable3DSamples() const override;
 
 		virtual Bool doesViolateLimit( AudioEventRTS *event ) const override;
 		virtual Bool isPlayingLowerPriority( AudioEventRTS *event ) const override;
@@ -272,8 +274,8 @@ class MilesAudioManager : public AudioManager
 		void stopAllAudioImmediately();
 		void freeAllMilesHandles();
 
-		HSAMPLE getFirst2DSample( AudioEventRTS *event );
-		H3DSAMPLE getFirst3DSample( AudioEventRTS *event );
+		HSAMPLE getAvailable2DSample( AudioEventRTS *event );
+		H3DSAMPLE getAvailable3DSample( AudioEventRTS *event );
 
 		void adjustPlayingVolume( PlayingAudio *audio );
 
@@ -301,8 +303,8 @@ class MilesAudioManager : public AudioManager
 
 		// Available handles for play. Note that there aren't handles open in advance for
 		// streaming things, only 2-D and 3-D sounds.
-		std::list<HSAMPLE> m_availableSamples;
-		std::list<H3DSAMPLE> m_available3DSamples;
+		std::vector<HSAMPLE> m_availableSamples;
+		std::vector<H3DSAMPLE> m_available3DSamples;
 
 		// Currently Playing audio. Useful if we have to preempt it.
 		// This should rarely if ever happen, as we mirror this in Sounds, and attempt to
@@ -368,6 +370,8 @@ class MilesAudioManagerDummy : public MilesAudioManager
 	virtual UnsignedInt getNum2DSamples() const override { return 0; }
 	virtual UnsignedInt getNum3DSamples() const override { return 0; }
 	virtual UnsignedInt getNumStreams() const override { return 0; }
+	virtual UnsignedInt getNumAvailable2DSamples() const override { return 0; }
+	virtual UnsignedInt getNumAvailable3DSamples() const override { return 0; }
 	virtual Bool doesViolateLimit(AudioEventRTS* event) const override { return false; }
 	virtual Bool isPlayingLowerPriority(AudioEventRTS* event) const override { return false; }
 	virtual Bool isPlayingAlready(AudioEventRTS* event) const override { return false; }

@@ -179,8 +179,15 @@ AIGuardMachine::AIGuardMachine( Object *owner ) :
 	//Kris: Except that guard return is more like an attack move, and will acquire targets while moving there.
 	//This breaks deployAI units because they have to completely unpack before realizing that there is a target in range.
 	//So I'm making AI_GUARD_INNER the first state.
+#if RETAIL_COMPATIBLE_CRC
 	defineState( AI_GUARD_INNER,						newInstance(AIGuardInnerState)( this ), AI_GUARD_OUTER, AI_GUARD_OUTER, attackAggressors );
 	defineState( AI_GUARD_RETURN,						newInstance(AIGuardReturnState)( this ), AI_GUARD_IDLE, AI_GUARD_INNER, attackAggressors );
+#else
+	// TheSuperHackers @bugfix 09/04/2026 The attack aggressors conditions for AI_GUARD_INNER and AI_GUARD_RETURN
+	// were removed to fix the conflicting movement and fire behavior in guard mode when the unit is under attack.
+	defineState( AI_GUARD_INNER,						newInstance(AIGuardInnerState)( this ), AI_GUARD_OUTER, AI_GUARD_OUTER );
+	defineState( AI_GUARD_RETURN,						newInstance(AIGuardReturnState)( this ), AI_GUARD_IDLE, AI_GUARD_INNER );
+#endif
 	defineState( AI_GUARD_IDLE,							newInstance(AIGuardIdleState)( this ), AI_GUARD_INNER, AI_GUARD_RETURN, attackAggressors );
 	defineState( AI_GUARD_OUTER,						newInstance(AIGuardOuterState)( this ), AI_GUARD_GET_CRATE, AI_GUARD_GET_CRATE );
 	defineState( AI_GUARD_GET_CRATE,				newInstance(AIGuardPickUpCrateState)( this ), AI_GUARD_RETURN, AI_GUARD_RETURN );

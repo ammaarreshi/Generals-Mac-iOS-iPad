@@ -795,6 +795,10 @@ Int W3DShadowGeometry::initFromMesh(RenderObjClass *robj)
 	if (((geomMesh->m_mesh->Is_Alpha() || geomMesh->m_mesh->Is_Translucent()) && !geomMesh->m_mesh->Peek_Model()->Get_Flag(MeshGeometryClass::CAST_SHADOW)))
 		return FALSE; //transparent meshes that don't have forced shadows will not cast volumetric shadows
 
+	// GeneralsX @bugfix Mr. Meeseeks 17/06/2026 Skin meshes should never cast a volumetric shadow (matches initFromHLOD behavior and Zero Hour upstream)
+	if (geomMesh->m_mesh->Peek_Model()->Get_Flag(MeshGeometryClass::SKIN))
+		return FALSE;
+
 	MeshModelClass *mm = geomMesh->m_mesh->Peek_Model();
 	geomMesh->m_numVerts=mm->Get_Vertex_Count();
 	geomMesh->m_verts=mm->Get_Vertex_Array();

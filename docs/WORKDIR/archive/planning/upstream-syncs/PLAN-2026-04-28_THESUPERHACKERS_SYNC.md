@@ -22,7 +22,7 @@ Perform an upstream sync from `thesuperhackers/main` into branch `thesuperhacker
 
 - Local instructions and project strategy documents under `.github/instructions/`
 - Existing project lessons in `docs/WORKDIR/lessons/2026-04-LESSONS.md`
-- Local reference snapshot under `references/thesuperhackers-main/`
+- Local reference snapshot under `references/old-refs/thesuperhackers-main/`
 - Direct upstream file state from `thesuperhackers/main` for each conflicted file
 
 ## Conflict Resolution Plan

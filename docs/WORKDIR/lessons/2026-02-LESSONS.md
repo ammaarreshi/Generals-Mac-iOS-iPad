@@ -827,7 +827,7 @@ This is the same category as LESSON-50 (`long` in TGA structs) and LESSON-45 (`v
 
 **Applies To**: `SDL3Mouse::translateEvent()` — all three event types (motion, button, wheel). For wheel events use `event.wheel.mouse_x/mouse_y`, not a separate `SDL_GetMouseState()` call.
 
-**Reference**: `references/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/Source/SDL3Device/GameClient/SDL3Mouse.cpp` → `scaleMouseCoordinates()`
+**Reference**: `references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/Source/SDL3Device/GameClient/SDL3Mouse.cpp` → `scaleMouseCoordinates()`
 
 ---
 

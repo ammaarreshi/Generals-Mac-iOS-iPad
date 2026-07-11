@@ -2010,7 +2010,7 @@ void DozerAIUpdate::newTask( DozerTask task, Object *target )
 		offset.set(position.x-target->getPosition()->x, position.y-target->getPosition()->y, 0);
 		offset.normalize();
 		offset.scale(5*PATHFIND_CELL_SIZE_F);
-		position.add(&offset); // move away from the dock point at the end of build.
+		position.add(offset); // move away from the dock point at the end of build.
 		m_dockPoint[ task ][ DOZER_DOCK_POINT_END ].valid				= TRUE;
 		m_dockPoint[ task ][ DOZER_DOCK_POINT_END ].location		= position;
 

@@ -536,7 +536,7 @@ def main():
     #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameLogic/System/Damage.cpp", Game.CORE, "GameEngine/Source/GameLogic/System/Damage.cpp")
     #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameLogic/System/GameLogicDispatch.cpp", Game.CORE, "GameEngine/Source/GameLogic/System/GameLogicDispatch.cpp")
     #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameLogic/System/RankInfo.cpp", Game.CORE, "GameEngine/Source/GameLogic/System/RankInfo.cpp")
-    
+
     #unify_file_lib(Game.ZEROHOUR, "Libraries/Source/WWVegas/WW3D2/dx8fvf.h", Game.CORE, "Libraries/Source/WWVegas/WW3D2/dx8fvf.h")
     #unify_file_lib(Game.ZEROHOUR, "Libraries/Source/WWVegas/WW3D2/dx8indexbuffer.h", Game.CORE, "Libraries/Source/WWVegas/WW3D2/dx8indexbuffer.h")
     #unify_file_lib(Game.ZEROHOUR, "Libraries/Source/WWVegas/WW3D2/dx8renderer.h", Game.CORE, "Libraries/Source/WWVegas/WW3D2/dx8renderer.h")
@@ -545,9 +545,51 @@ def main():
     #unify_file_lib(Game.ZEROHOUR, "Libraries/Source/WWVegas/WW3D2/dx8indexbuffer.cpp", Game.CORE, "Libraries/Source/WWVegas/WW3D2/dx8indexbuffer.cpp")
     #unify_file_lib(Game.ZEROHOUR, "Libraries/Source/WWVegas/WW3D2/dx8renderer.cpp", Game.CORE, "Libraries/Source/WWVegas/WW3D2/dx8renderer.cpp")
     #unify_file_lib(Game.ZEROHOUR, "Libraries/Source/WWVegas/WW3D2/dx8vertexbuffer.cpp", Game.CORE, "Libraries/Source/WWVegas/WW3D2/dx8vertexbuffer.cpp")
-    
+
     #unify_file_lib(Game.ZEROHOUR, "Libraries/Source/WWVegas/WW3D2/sortingrenderer.h", Game.CORE, "Libraries/Source/WWVegas/WW3D2/sortingrenderer.h")
     #unify_file_lib(Game.ZEROHOUR, "Libraries/Source/WWVegas/WW3D2/sortingrenderer.cpp", Game.CORE, "Libraries/Source/WWVegas/WW3D2/sortingrenderer.cpp")
+
+    #unify_move_file(Game.ZEROHOUR, "GameEngine/Include/Common/AcademyStats.h", Game.CORE, "GameEngine/Include/Common/AcademyStats.h")
+    #unify_move_file(Game.ZEROHOUR, "GameEngine/Source/Common/RTS/AcademyStats.cpp", Game.CORE, "GameEngine/Source/Common/RTS/AcademyStats.cpp")
+
+    #unify_file(Game.ZEROHOUR, "GameEngine/Include/GameClient/CommandXlat.h", Game.CORE, "GameEngine/Include/GameClient/CommandXlat.h")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Include/GameClient/GUICommandTranslator.h", Game.CORE, "GameEngine/Include/GameClient/GUICommandTranslator.h")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Include/GameClient/HintSpy.h", Game.CORE, "GameEngine/Include/GameClient/HintSpy.h")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Include/GameClient/HotKey.h", Game.CORE, "GameEngine/Include/GameClient/HotKey.h")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Include/GameClient/LookAtXlat.h", Game.CORE, "GameEngine/Include/GameClient/LookAtXlat.h")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Include/GameClient/MetaEvent.h", Game.CORE, "GameEngine/Include/GameClient/MetaEvent.h")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Include/GameClient/PlaceEventTranslator.h", Game.CORE, "GameEngine/Include/GameClient/PlaceEventTranslator.h")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Include/GameClient/SelectionXlat.h", Game.CORE, "GameEngine/Include/GameClient/SelectionXlat.h")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Include/GameClient/WindowXlat.h", Game.CORE, "GameEngine/Include/GameClient/WindowXlat.h")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/MessageStream/CommandXlat.cpp", Game.CORE, "GameEngine/Source/GameClient/MessageStream/CommandXlat.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/MessageStream/GUICommandTranslator.cpp", Game.CORE, "GameEngine/Source/GameClient/MessageStream/GUICommandTranslator.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/MessageStream/HintSpy.cpp", Game.CORE, "GameEngine/Source/GameClient/MessageStream/HintSpy.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/MessageStream/HotKey.cpp", Game.CORE, "GameEngine/Source/GameClient/MessageStream/HotKey.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/MessageStream/LookAtXlat.cpp", Game.CORE, "GameEngine/Source/GameClient/MessageStream/LookAtXlat.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/MessageStream/MetaEvent.cpp", Game.CORE, "GameEngine/Source/GameClient/MessageStream/MetaEvent.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/MessageStream/PlaceEventTranslator.cpp", Game.CORE, "GameEngine/Source/GameClient/MessageStream/PlaceEventTranslator.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/MessageStream/SelectionXlat.cpp", Game.CORE, "GameEngine/Source/GameClient/MessageStream/SelectionXlat.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/MessageStream/WindowXlat.cpp", Game.CORE, "GameEngine/Source/GameClient/MessageStream/WindowXlat.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/GameClientDispatch.cpp", Game.CORE, "GameEngine/Source/GameClient/GameClientDispatch.cpp")
+
+    #unify_file(Game.ZEROHOUR, "GameEngine/Include/GameClient/ControlBar.h", Game.CORE, "GameEngine/Include/GameClient/ControlBar.h")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Include/GameClient/ControlBarResizer.h", Game.CORE, "GameEngine/Include/GameClient/ControlBarResizer.h")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Include/GameClient/ControlBarScheme.h", Game.CORE, "GameEngine/Include/GameClient/ControlBarScheme.h")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBar.cpp", Game.CORE, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBar.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarBeacon.cpp", Game.CORE, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarBeacon.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarCommand.cpp", Game.CORE, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarCommand.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarCommandProcessing.cpp", Game.CORE, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarCommandProcessing.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarMultiSelect.cpp", Game.CORE, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarMultiSelect.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarOCLTimer.cpp", Game.CORE, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarOCLTimer.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarObserver.cpp", Game.CORE, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarObserver.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarPrintPositions.cpp", Game.CORE, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarPrintPositions.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarResizer.cpp", Game.CORE, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarResizer.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarScheme.cpp", Game.CORE, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarScheme.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarStructureInventory.cpp", Game.CORE, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarStructureInventory.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarUnderConstruction.cpp", Game.CORE, "GameEngine/Source/GameClient/GUI/ControlBar/ControlBarUnderConstruction.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/GUI/GUICallbacks/ControlBarCallback.cpp", Game.CORE, "GameEngine/Source/GameClient/GUI/GUICallbacks/ControlBarCallback.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngine/Source/GameClient/GUI/GUICallbacks/ControlBarPopupDescription.cpp", Game.CORE, "GameEngine/Source/GameClient/GUI/GUICallbacks/ControlBarPopupDescription.cpp")
+    #unify_file(Game.ZEROHOUR, "GameEngineDevice/Source/W3DDevice/GameClient/GUI/GUICallbacks/W3DControlBar.cpp", Game.CORE, "GameEngineDevice/Source/W3DDevice/GameClient/GUI/GUICallbacks/W3DControlBar.cpp")
 
     return
 

@@ -722,8 +722,8 @@ void WaveGuideUpdate::doDamage()
 								u.y = Sin( angle + modData->m_bridgeParticleAngleFudge );
 								u.z = 0.0f;
 
-								y.crossProduct( &z, &u, &y );
-								x.crossProduct( &y, &z, &x );
+								y.crossProduct( z, u, y );
+								x.crossProduct( y, z, x );
 
 								transform.Set(  x.x, y.x, z.x, obj->getPosition()->x,
 																x.y, y.y, z.y, obj->getPosition()->y,

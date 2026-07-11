@@ -13,6 +13,7 @@ option(RTS_BUILD_OPTION_FFMPEG "Enable FFmpeg support" OFF)
 # Linux/SDL3 and OpenAL options (Phase 1 Linux port)
 option(SAGE_USE_SDL3 "Use SDL3 for windowing/input (Linux/macOS)" OFF)
 option(SAGE_USE_OPENAL "Use OpenAL for audio backend (Linux/macOS)" OFF)
+option(SAGE_USE_MINIAUDIO "Use MiniAudio for audio backend (Linux/macOS)" OFF)
 
 # GeneralsX @feature BenderAI 21/04/2026 In-game update checker via GitHub Releases API (SDL3+libcurl builds only)
 # Default ON when SDL3 is enabled, but only if the user has not explicitly set SAGE_UPDATE_CHECK.
@@ -119,6 +120,12 @@ endif()
 if(SAGE_USE_OPENAL)
     target_compile_definitions(core_config INTERFACE SAGE_USE_OPENAL)
     message(STATUS "OpenAL audio backend enabled")
+endif()
+
+# GeneralsX @feature fbraz 11/06/2026 MiniAudio audio backend (alternative to OpenAL)
+if(SAGE_USE_MINIAUDIO)
+    target_compile_definitions(core_config INTERFACE SAGE_USE_MINIAUDIO)
+    message(STATUS "MiniAudio audio backend enabled")
 endif()
 
 # GeneralsX @feature BenderAI 21/04/2026 Update check compile definition

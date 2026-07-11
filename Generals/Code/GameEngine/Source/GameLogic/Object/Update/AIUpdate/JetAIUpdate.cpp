@@ -107,7 +107,7 @@ static ParkingPlaceBehaviorInterface* getPP(ObjectID id, Object** airfieldPP = n
 		*airfieldPP = nullptr;
 
 	Object* airfield = TheGameLogic->findObjectByID( id );
-	if (airfield == nullptr || airfield->isEffectivelyDead() || !airfield->isKindOf(KINDOF_AIRFIELD) || airfield->testStatus(OBJECT_STATUS_SOLD))
+	if (airfield == nullptr || airfield->isEffectivelyDead() || !airfield->isKindOf(KINDOF_FS_AIRFIELD) || airfield->testStatus(OBJECT_STATUS_SOLD))
 		return nullptr;
 
 	if (airfieldPP)
@@ -146,7 +146,7 @@ protected:
 //-------------------------------------------------------------------------------------------------
 static Object* findSuitableAirfield(Object* jet)
 {
-	PartitionFilterAcceptByKindOf					filterKind(MAKE_KINDOF_MASK(KINDOF_AIRFIELD), KINDOFMASK_NONE);
+	PartitionFilterAcceptByKindOf					filterKind(MAKE_KINDOF_MASK(KINDOF_FS_AIRFIELD), KINDOFMASK_NONE);
 	PartitionFilterRejectByObjectStatus		filterStatus( MAKE_OBJECT_STATUS_MASK( OBJECT_STATUS_UNDER_CONSTRUCTION ), OBJECT_STATUS_MASK_NONE );
 	PartitionFilterRejectByObjectStatus		filterStatusTwo( MAKE_OBJECT_STATUS_MASK( OBJECT_STATUS_SOLD ), OBJECT_STATUS_MASK_NONE ); // Independent to make it an OR
 	PartitionFilterRelationship						filterTeam(jet, PartitionFilterRelationship::ALLOW_ALLIES);
@@ -457,7 +457,7 @@ public:
 
 		Coord3D intermedPt;
 		Bool intermed = false;
-		Real orient = atan2(ppinfo.runwayPrep.y - ppinfo.parkingSpace.y, ppinfo.runwayPrep.x - ppinfo.parkingSpace.x);
+		Real orient = WWMath::Atan2Origin(ppinfo.runwayPrep.y - ppinfo.parkingSpace.y, ppinfo.runwayPrep.x - ppinfo.parkingSpace.x);
 		if (fabs(stdAngleDiff(orient, ppinfo.parkingOrientation)) > PI/128)
 		{
 			intermedPt.z = (ppinfo.parkingSpace.z + ppinfo.runwayPrep.z) * 0.5f;
@@ -884,7 +884,7 @@ public:
 		}
 		else
 		{
-			Real dist = sqrtf(dSqr);
+			Real dist = WWMath::SqrtfOrigin(dSqr);
 			if (dist<1) dist = 1;
 			pos.x += PATHFIND_CELL_SIZE_F*dx/(dist*LOGICFRAMES_PER_SECOND);
 			pos.y += PATHFIND_CELL_SIZE_F*dy/(dist*LOGICFRAMES_PER_SECOND);
@@ -2070,7 +2070,7 @@ void JetAIUpdate::positionLockon()
 	Real dx = getObject()->getPosition()->x - pos.x;
 	Real dy = getObject()->getPosition()->y - pos.y;
 	if (dx || dy)
-		m_lockonDrawable->setOrientation(atan2(dy, dx));
+		m_lockonDrawable->setOrientation(WWMath::Atan2Origin(dy, dx));
 
 	// the Gaussian sum, to avoid keeping a running total:
 	//

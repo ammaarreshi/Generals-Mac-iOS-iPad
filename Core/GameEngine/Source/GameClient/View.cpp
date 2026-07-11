@@ -248,13 +248,12 @@ Bool View::isUserControlLocked() const
 /** project the 4 corners of this view into the world and return each point as a parameter,
 		the world points are at the requested Z */
 //-------------------------------------------------------------------------------------------------
-void View::getScreenCornerWorldPointsAtZ( Coord3D *topLeft, Coord3D *topRight,
+PlaneClass::IntersectionResType View::getScreenCornerWorldPointsAtZ( Coord3D *topLeft, Coord3D *topRight,
 																					Coord3D *bottomRight, Coord3D *bottomLeft,
-																					Real z )
+																					Real z, ViewportClass viewPort )
 {
-	// sanity
 	if( topLeft == nullptr || topRight == nullptr || bottomRight == nullptr || bottomLeft == nullptr)
-		return;
+		return PlaneClass::NO_INTERSECTION;
 
 	ICoord2D screenTopLeft;
 	ICoord2D screenTopRight;
@@ -267,20 +266,36 @@ void View::getScreenCornerWorldPointsAtZ( Coord3D *topLeft, Coord3D *topRight,
 	// setup the screen coords for the 4 corners of the viewable display
 	getOrigin( &origin.x, &origin.y );
 
-	screenTopLeft.x = origin.x;
-	screenTopLeft.y = origin.y;
-	screenTopRight.x = origin.x + viewWidth;
-	screenTopRight.y = origin.y;
-	screenBottomRight.x = origin.x + viewWidth;
-	screenBottomRight.y = origin.y + viewHeight;
-	screenBottomLeft.x = origin.x;
-	screenBottomLeft.y = origin.y + viewHeight;
+	screenTopLeft.x = origin.x + viewWidth * viewPort.Min.X;
+	screenTopLeft.y = origin.y + viewHeight * viewPort.Min.Y;
+	screenTopRight.x = origin.x + viewWidth * viewPort.Max.X;
+	screenTopRight.y = origin.y + viewHeight * viewPort.Min.Y;
+	screenBottomRight.x = origin.x + viewWidth * viewPort.Max.X;
+	screenBottomRight.y = origin.y + viewHeight * viewPort.Max.Y;
+	screenBottomLeft.x = origin.x + viewWidth * viewPort.Min.X;
+	screenBottomLeft.y = origin.y + viewHeight * viewPort.Max.Y;
 
-	// project
-	screenToWorldAtZ( &screenTopLeft, topLeft, z );
-	screenToWorldAtZ( &screenTopRight, topRight, z );
-	screenToWorldAtZ( &screenBottomRight, bottomRight, z );
-	screenToWorldAtZ( &screenBottomLeft, bottomLeft, z );
+	PlaneClass::IntersectionResType combinedResult = PlaneClass::INSIDE_SEGMENT;
+	PlaneClass::IntersectionResType individualResults[4];
+	individualResults[0] = screenToWorldAtZ( &screenTopLeft, topLeft, z );
+	individualResults[1] = screenToWorldAtZ( &screenTopRight, topRight, z );
+	individualResults[2] = screenToWorldAtZ( &screenBottomRight, bottomRight, z );
+	individualResults[3] = screenToWorldAtZ( &screenBottomLeft, bottomLeft, z );
+
+	for( Int i = 0; i < 4; ++i )
+	{
+		if( individualResults[i] == PlaneClass::NO_INTERSECTION )
+		{
+			combinedResult = PlaneClass::NO_INTERSECTION;
+			break;
+		}
+		if( individualResults[i] == PlaneClass::OUTSIDE_LINE )
+		{
+			combinedResult = PlaneClass::OUTSIDE_LINE;
+		}
+	}
+
+	return combinedResult;
 }
 
 // ------------------------------------------------------------------------------------------------

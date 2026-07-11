@@ -451,9 +451,9 @@ Bool getCapsState() {
 
 ## 📌 References
 
-- **Fighter19 SDL3Mouse**: `references/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/Source/SDL3Device/GameClient/SDL3Mouse.cpp`
-- **Fighter19 SDL3Keyboard**: `references/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/Source/SDL3Device/GameClient/SDL3Keyboard.cpp`
-- **Fighter19 SDL3GameEngine**: `references/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/Include/SDL3Device/Common/SDL3GameEngine.h`
+- **Fighter19 SDL3Mouse**: `references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/Source/SDL3Device/GameClient/SDL3Mouse.cpp`
+- **Fighter19 SDL3Keyboard**: `references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/Source/SDL3Device/GameClient/SDL3Keyboard.cpp`
+- **Fighter19 SDL3GameEngine**: `references/old-refs/fighter19-dxvk-port/GeneralsMD/Code/GameEngineDevice/Include/SDL3Device/Common/SDL3GameEngine.h`
 - **Fighter19 Key Mapping**: Lines 77-131 in SDL3Keyboard.cpp (ConvertSDLKey function)
 
 ---

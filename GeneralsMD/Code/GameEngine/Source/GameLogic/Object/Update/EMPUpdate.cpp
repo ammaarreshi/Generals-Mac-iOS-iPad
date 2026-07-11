@@ -345,9 +345,9 @@ void EMPUpdate::doDisableAttack()
 		{
 			//Victim position
 			Coord3D coord;
-			coord.set( intendedVictim->getPosition() );
+			coord.set( *intendedVictim->getPosition() );
 			//Subtract this object (distance from missile to victim's previous position)
-			coord.sub( pos );
+			coord.sub( *pos );
 
 			Real lengthSqr = coord.lengthSqr();
 			if( lengthSqr <= radius * 2.0f || lengthSqr <= 40.0f * 40.0f )

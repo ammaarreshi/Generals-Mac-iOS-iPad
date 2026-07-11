@@ -38,10 +38,89 @@
 #include "Common/UserPreferences.h"
 #include "GameLogic/GameLogic.h"
 
+#ifndef _WIN32
+#include <ifaddrs.h>
+#include <net/if.h>
+#endif
 
 static const UnsignedShort lobbyPort = 8086; ///< This is the UDP port used by all LANAPI communication
 
 AsciiString GetMessageTypeString(UnsignedInt type);
+
+#ifndef _WIN32
+// GeneralsX @feature GitHubCopilot 12/04/2026 Discover per-interface IPv4 subnet broadcast addresses for LAN discovery on POSIX.
+static Int GatherSubnetBroadcastAddrs(UnsignedInt localIP, UnsignedInt *outAddrs, Int maxAddrs)
+{
+	if (outAddrs == nullptr || maxAddrs <= 0)
+	{
+		return 0;
+	}
+
+	Int count = 0;
+	struct ifaddrs *ifaddr = nullptr;
+	if (getifaddrs(&ifaddr) != 0)
+	{
+		return 0;
+	}
+
+	for (struct ifaddrs *ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next)
+	{
+		if (ifa->ifa_addr == nullptr || ifa->ifa_addr->sa_family != AF_INET)
+		{
+			continue;
+		}
+		// GeneralsX @bugfix Codex 10/07/2026 Ignore point-to-point/VPN interfaces that cannot supply a subnet broadcast.
+		if ((ifa->ifa_flags & IFF_UP) == 0
+			|| (ifa->ifa_flags & IFF_BROADCAST) == 0
+			|| (ifa->ifa_flags & (IFF_LOOPBACK | IFF_POINTOPOINT)) != 0)
+		{
+			continue;
+		}
+
+		const sockaddr_in *addr = reinterpret_cast<const sockaddr_in *>(ifa->ifa_addr);
+		const UnsignedInt hostAddr = ntohl(addr->sin_addr.s_addr);
+		if (localIP != 0 && hostAddr != localIP)
+		{
+			continue;
+		}
+
+		UnsignedInt bcast = 0;
+		if (ifa->ifa_broadaddr != nullptr && ifa->ifa_broadaddr->sa_family == AF_INET)
+		{
+			const sockaddr_in *baddr = reinterpret_cast<const sockaddr_in *>(ifa->ifa_broadaddr);
+			bcast = ntohl(baddr->sin_addr.s_addr);
+		}
+		else if (ifa->ifa_netmask != nullptr && ifa->ifa_netmask->sa_family == AF_INET)
+		{
+			const sockaddr_in *nmask = reinterpret_cast<const sockaddr_in *>(ifa->ifa_netmask);
+			const UnsignedInt mask = ntohl(nmask->sin_addr.s_addr);
+			bcast = (hostAddr & mask) | (~mask);
+		}
+		else
+		{
+			continue;
+		}
+
+		Bool duplicate = FALSE;
+		for (Int i = 0; i < count; ++i)
+		{
+			if (outAddrs[i] == bcast)
+			{
+				duplicate = TRUE;
+				break;
+			}
+		}
+
+		if (!duplicate && count < maxAddrs)
+		{
+			outAddrs[count++] = bcast;
+		}
+	}
+
+	freeifaddrs(ifaddr);
+	return count;
+}
+#endif
 
 const UnsignedInt LANAPI::s_resendDelta = 10 * 1000;	///< This is how often we announce ourselves to the world
 /*
@@ -183,24 +262,74 @@ void LANAPI::sendMessage(LANMessage *msg, UnsignedInt ip /* = 0 */)
 {
 	if (ip != 0)
 	{
-		m_transport->queueSend(ip, lobbyPort, (unsigned char *)msg, sizeof(LANMessage) /*, 0, 0 */);
+		// GeneralsX @build GitHubCopilot 11/04/2026 Instrument direct LAN sends for cross-platform diagnostics.
+		Bool queued = m_transport->queueSend(ip, lobbyPort, (unsigned char *)msg, sizeof(LANMessage) /*, 0, 0 */);
+		DEBUG_LOG(("LANAPI::sendMessage - direct type=%s dst=%d.%d.%d.%d:%d queued=%d",
+			GetMessageTypeString(msg->messageType).str(), PRINTF_IP_AS_4_INTS(ip), lobbyPort, queued));
 	}
-	else if ((m_currentGame != nullptr) && (m_currentGame->getIsDirectConnect()))
+	// GeneralsX @bugfix GitHubCopilot 12/04/2026 Prefer directed fan-out for in-game state/control packets to avoid cross-platform broadcast loss.
+	const Bool shouldUseDirectedFanout = (m_currentGame != nullptr)
+		&& ((m_currentGame->getIsDirectConnect())
+			|| (!m_inLobby && msg != nullptr && (
+				msg->messageType == LANMessage::MSG_GAME_OPTIONS
+				|| msg->messageType == LANMessage::MSG_GAME_START
+				|| msg->messageType == LANMessage::MSG_GAME_START_TIMER
+				|| msg->messageType == LANMessage::MSG_REQUEST_GAME_LEAVE
+				|| msg->messageType == LANMessage::MSG_SET_ACCEPT
+				|| msg->messageType == LANMessage::MSG_MAP_AVAILABILITY
+				|| msg->messageType == LANMessage::MSG_CHAT
+				|| msg->messageType == LANMessage::MSG_INACTIVE)));
+
+	if (shouldUseDirectedFanout)
 	{
 		Int localSlot = m_currentGame->getLocalSlotNum();
+		Bool sentAny = FALSE;
 		for (Int i = 0; i < MAX_SLOTS; ++i)
 		{
 			if (i != localSlot) {
 				GameSlot *slot = m_currentGame->getSlot(i);
 				if ((slot != nullptr) && (slot->isHuman())) {
-					m_transport->queueSend(slot->getIP(), lobbyPort, (unsigned char *)msg, sizeof(LANMessage) /*, 0, 0 */);
+					// GeneralsX @build GitHubCopilot 11/04/2026 Instrument direct-connect fan-out sends.
+					Bool queued = m_transport->queueSend(slot->getIP(), lobbyPort, (unsigned char *)msg, sizeof(LANMessage) /*, 0, 0 */);
+					sentAny = TRUE;
+					DEBUG_LOG(("LANAPI::sendMessage - direct-connect type=%s dst=%d.%d.%d.%d:%d queued=%d",
+						GetMessageTypeString(msg->messageType).str(), PRINTF_IP_AS_4_INTS(slot->getIP()), lobbyPort, queued));
 				}
 			}
+		}
+
+		if (!sentAny)
+		{
+			Bool queued = m_transport->queueSend(m_broadcastAddr, lobbyPort, (unsigned char *)msg, sizeof(LANMessage) /*, 0, 0 */);
+			DEBUG_LOG(("LANAPI::sendMessage - directed-fanout fallback broadcast type=%s dst=%d.%d.%d.%d:%d local=%d.%d.%d.%d queued=%d",
+				GetMessageTypeString(msg->messageType).str(), PRINTF_IP_AS_4_INTS(m_broadcastAddr), lobbyPort,
+				PRINTF_IP_AS_4_INTS(m_localIP), queued));
 		}
 	}
 	else
 	{
-		m_transport->queueSend(m_broadcastAddr, lobbyPort, (unsigned char *)msg, sizeof(LANMessage) /*, 0, 0 */);
+		// GeneralsX @feature GitHubCopilot 12/04/2026 Send discovery/control broadcast packets to interface subnet broadcast addresses before global broadcast.
+		Bool sentAny = FALSE;
+#ifndef _WIN32
+		UnsignedInt subnetBroadcasts[8];
+		Int subnetCount = GatherSubnetBroadcastAddrs(m_localIP, subnetBroadcasts, ARRAY_SIZE(subnetBroadcasts));
+		for (Int i = 0; i < subnetCount; ++i)
+		{
+			UnsignedInt dst = subnetBroadcasts[i];
+			Bool queued = m_transport->queueSend(dst, lobbyPort, (unsigned char *)msg, sizeof(LANMessage) /*, 0, 0 */);
+			sentAny = TRUE;
+			DEBUG_LOG(("LANAPI::sendMessage - subnet-broadcast type=%s dst=%d.%d.%d.%d:%d local=%d.%d.%d.%d queued=%d",
+				GetMessageTypeString(msg->messageType).str(), PRINTF_IP_AS_4_INTS(dst), lobbyPort,
+				PRINTF_IP_AS_4_INTS(m_localIP), queued));
+		}
+#endif
+		if (!sentAny)
+		{
+			Bool queued = m_transport->queueSend(m_broadcastAddr, lobbyPort, (unsigned char *)msg, sizeof(LANMessage) /*, 0, 0 */);
+			DEBUG_LOG(("LANAPI::sendMessage - broadcast type=%s dst=%d.%d.%d.%d:%d local=%d.%d.%d.%d queued=%d",
+				GetMessageTypeString(msg->messageType).str(), PRINTF_IP_AS_4_INTS(m_broadcastAddr), lobbyPort,
+				PRINTF_IP_AS_4_INTS(m_localIP), queued));
+		}
 	}
 }
 
@@ -616,6 +745,9 @@ void LANAPI::RequestLocations()
 	LANMessage msg;
 	msg.messageType = LANMessage::MSG_REQUEST_LOCATIONS;
 	fillInLANMessage( &msg );
+	// GeneralsX @build GitHubCopilot 11/04/2026 Trace LAN discovery probes emitted by this client.
+	DEBUG_LOG(("LANAPI::RequestLocations - local=%d.%d.%d.%d broadcast=%d.%d.%d.%d port=%d",
+		PRINTF_IP_AS_4_INTS(m_localIP), PRINTF_IP_AS_4_INTS(m_broadcastAddr), lobbyPort));
 	sendMessage(&msg);
 }
 
@@ -1272,11 +1404,17 @@ void LANAPI::addPlayer( LANPlayer *player )
 Bool LANAPI::SetLocalIP( UnsignedInt localIP )
 {
 	Bool retval = TRUE;
+	UnsignedInt oldIP = m_localIP;
 	m_localIP = localIP;
+	// GeneralsX @build GitHubCopilot 11/04/2026 Trace LAN socket rebind lifecycle for issue #86 diagnostics.
+	DEBUG_LOG(("LANAPI::SetLocalIP - rebinding LAN transport from %d.%d.%d.%d to %d.%d.%d.%d:%d",
+		PRINTF_IP_AS_4_INTS(oldIP), PRINTF_IP_AS_4_INTS(m_localIP), lobbyPort));
 
 	m_transport->reset();
 	retval = m_transport->init(m_localIP, lobbyPort);
-	m_transport->allowBroadcasts(true);
+	Bool broadcastsEnabled = m_transport->allowBroadcasts(true);
+	DEBUG_LOG(("LANAPI::SetLocalIP - init=%d allowBroadcasts=%d local=%d.%d.%d.%d:%d",
+		retval, broadcastsEnabled, PRINTF_IP_AS_4_INTS(m_localIP), lobbyPort));
 
 	return retval;
 }

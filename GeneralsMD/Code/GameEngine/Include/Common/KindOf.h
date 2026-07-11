@@ -41,7 +41,7 @@
 enum KindOfType CPP_11(: Int)
 {
 	KINDOF_INVALID = -1,
-	
+
 	KINDOF_OBSTACLE,								///< an obstacle to land-based pathfinders
 	KINDOF_SELECTABLE,							///< Actually means MOUSE-INTERACTABLE (doesn't mean you can select it!)
 	KINDOF_IMMOBILE,								///< fixed in location
@@ -80,6 +80,9 @@ enum KindOfType CPP_11(: Int)
 	KINDOF_STEALTH_GARRISON,				/** enemy teams can't tell that unit is in building.. and if they
 																		garrison that building, they stealth unit will eject. */
 	KINDOF_CASH_GENERATOR,					///< used to check if the unit generates cash... checked by cash hackers and whatever else comes up
+#if RTS_GENERALS
+	KINDOF_AIRFIELD,								///< unit has a runway that planes can takeoff/land on
+#endif
 	KINDOF_DRAWABLE_ONLY,						///< template is used only to create drawables (not Objects)
 	KINDOF_MP_COUNT_FOR_VICTORY,		///< If a player loses all his buildings that have this kindof in a multiplayer game, he loses.
 	KINDOF_REBUILD_HOLE,						///< a GLA rebuild hole
@@ -139,6 +142,7 @@ enum KindOfType CPP_11(: Int)
 	KINDOF_HERO,										///< Any of the single-instance infantry, JarmenKell, BlackLotus, ColonelBurton
 	KINDOF_IGNORES_SELECT_ALL,			///< Too late to figure out intelligently if something should respond to a Select All command
 	KINDOF_DONT_AUTO_CRUSH_INFANTRY,					///< These units don't try to crush the infantry if ai.
+	// TheSuperHackers @info Added in Zero Hour:
 	KINDOF_CLIFF_JUMPER,						///< Can't climb cliffs, but can jump off of them.
 	KINDOF_FS_SUPPLY_DROPZONE,						///< A supply dropzone.
 	KINDOF_FS_SUPERWEAPON,					///< A superweapon structure like a nuke silo, particle uplink cannon, scudstorm.

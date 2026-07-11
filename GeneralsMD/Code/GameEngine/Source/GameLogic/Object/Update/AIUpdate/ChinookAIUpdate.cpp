@@ -169,7 +169,7 @@ public:
 
 		Region3D mapRegion;
 		TheTerrainLogic->getExtentIncludingBorder( &mapRegion );
-		if( !mapRegion.isInRegionNoZ( owner->getPosition() ) )
+		if( !mapRegion.isInRegionNoZ( *owner->getPosition() ) )
 		{
 			TheGameLogic->destroyObject(owner);
 			return STATE_SUCCESS;

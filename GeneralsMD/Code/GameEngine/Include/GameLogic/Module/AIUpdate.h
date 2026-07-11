@@ -185,7 +185,7 @@ enum MoodActionAdjustment CPP_11(: Int)
 
 //-------------------------------------------------------------------------------------------------
 typedef std::vector< const LocomotorTemplate* > LocomotorTemplateVector;
-typedef std::map< LocomotorSetType, LocomotorTemplateVector, std::less<LocomotorSetType> > LocomotorTemplateMap;
+typedef std::map< LocomotorSetType, LocomotorTemplateVector, std::less<LocomotorSetType>/**/> LocomotorTemplateMap;
 
 //-------------------------------------------------------------------------------------------------
 class AIUpdateModuleData : public UpdateModuleData

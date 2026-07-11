@@ -211,6 +211,7 @@ public:
 
 	virtual void enableLoadSounds( Bool enable ) override { m_loadSoundsEnabled = enable; }
 
+  virtual Object* getClosestRider ( const Coord3D *pos ) override;
 protected:
 
 	virtual void monitorConditionChanges();				///< check to see if we need to update our occupant postions from a model change or anything else
@@ -238,7 +239,7 @@ protected:
 	UnsignedInt					m_containListSize;							///< size of contained list
 private:
 
-	typedef std::map< ObjectID, ObjectEnterExitType, std::less<ObjectID> > ObjectEnterExitMap;
+	typedef std::map< ObjectID, ObjectEnterExitType, std::less<ObjectID>/**/> ObjectEnterExitMap;
 
 	ObjectEnterExitMap	m_objectEnterExitInfo;
 	UnsignedInt					m_stealthUnitsContained;				///< number of stealth units that can't be seen by enemy players.

@@ -502,7 +502,7 @@ protected:
 
 private:
 
-	typedef std::map< NameKeyType, LocomotorTemplate*, std::less<NameKeyType> > LocomotorTemplateMap;
+	typedef std::map< NameKeyType, LocomotorTemplate*, std::less<NameKeyType>/**/> LocomotorTemplateMap;
 
 	LocomotorTemplateMap m_locomotorTemplates;
 

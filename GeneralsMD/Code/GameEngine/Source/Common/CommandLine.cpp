@@ -321,7 +321,7 @@ Int parseLogObjectCRCs(char *args[], int argc)
 //=============================================================================
 Int parseNetCRCInterval(char *args[], int argc)
 {
-#ifdef DEBUG_CRC
+#if defined(DEBUG_CRC) && !RETAIL_COMPATIBLE_NETWORKING
 	if (argc > 1)
 	{
 		NET_CRC_INTERVAL = atoi(args[1]);

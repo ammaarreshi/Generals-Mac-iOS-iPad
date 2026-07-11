@@ -302,8 +302,8 @@ void AudioManager::update()
 	//of making sure we only go a certain percentage towards the camera or the desired height, whichever occurs first.
 	Coord3D cameraPos = TheTacticalView->get3DCameraPosition();
 	Coord3D groundToCameraVector;
-	groundToCameraVector.set( &cameraPos );
-	groundToCameraVector.sub( &cameraPivot );
+	groundToCameraVector.set( cameraPos );
+	groundToCameraVector.sub( cameraPivot );
 	Real bestScaleFactor;
 
 	if( cameraPos.z <= desiredHeightAbs || groundToCameraVector.z <= 0.0f )
@@ -325,8 +325,8 @@ void AudioManager::update()
 
 	//Set the microphone to be the ground position adjusted for terrain plus the vector we just calculated.
 	Coord3D microphonePos;
-	microphonePos.set( &cameraPivot );
-	microphonePos.add( &groundToCameraVector );
+	microphonePos.set( cameraPivot );
+	microphonePos.add( groundToCameraVector );
 
 	//Viola! A properly placed microphone.
 	setListenerPosition( &microphonePos, &lookTo );
@@ -345,7 +345,7 @@ void AudioManager::update()
 	{
 		//How far away is the camera from the microphone?
 		Coord3D vector = cameraPos;
-		vector.sub( &microphonePos );
+		vector.sub( microphonePos );
 		Real dist = vector.length();
 
 		if( dist < minDist )
@@ -443,7 +443,7 @@ AudioHandle AudioManager::addAudioEvent(const AudioEventRTS *eventToAdd)
 	eventToAdd->setPlayingAudioIndex( audioEvent->getPlayingAudioIndex() );
 	audioEvent->generatePlayInfo();	// generate pitch shift and volume shift now as well
 
-	std::list<std::pair<AsciiString, Real> >::iterator it;
+	std::list<std::pair<AsciiString, Real>/**/>::iterator it;
 	for (it = m_adjustedVolumes.begin(); it != m_adjustedVolumes.end(); ++it) {
 		if (it->first == audioEvent->getEventName()) {
 			audioEvent->setVolume(it->second);
@@ -601,7 +601,7 @@ void AudioManager::setAudioEventVolumeOverride( AsciiString eventToAffect, Real 
 		adjustVolumeOfPlayingAudio(eventToAffect, newVolume);
 	}
 
-	std::list<std::pair<AsciiString, Real> >::iterator it;
+	std::list<std::pair<AsciiString, Real>/**/>::iterator it;
 	for (it = m_adjustedVolumes.begin(); it != m_adjustedVolumes.end(); ++it) {
 		if (it->first == eventToAffect) {
 			if (newVolume == -1.0f) {

@@ -167,7 +167,7 @@ void PointDefenseLaserUpdate::fireWhenReady()
 		bonus.clear();
 		Real fireRange = data->m_weaponTemplate->getAttackRange( bonus );
 		Object *me = getObject();
-		Real fDist = sqrt( ThePartitionManager->getDistanceSquared( me, target, FROM_CENTER_2D ) );
+		Real fDist = WWMath::SqrtOrigin( ThePartitionManager->getDistanceSquared( me, target, FROM_CENTER_2D ) );
 		if( fDist < fireRange )
 		{
 			//We are currently in range!
@@ -290,7 +290,7 @@ Object* PointDefenseLaserUpdate::scanClosestTarget()
 			continue;
 		}
 
-		Real fDist = sqrt( ThePartitionManager->getDistanceSquared( me, other, FROM_CENTER_2D ) );
+		Real fDist = WWMath::SqrtOrigin( ThePartitionManager->getDistanceSquared( me, other, FROM_CENTER_2D ) );
 
 		if( fDist <= fireRange )
 		{
@@ -312,12 +312,12 @@ Object* PointDefenseLaserUpdate::scanClosestTarget()
 				PhysicsBehavior *physics = other->getPhysics();
 				if( physics )
 				{
-					pos.set( physics->getVelocity() );
+					pos.set( *physics->getVelocity() );
 					pos.scale( data->m_velocityFactor );
-					pos.add( other->getPosition() );
+					pos.add( *other->getPosition() );
 
 					//Recalculate the distance.
-					fDist = sqrt( ThePartitionManager->getDistanceSquared( me, other, FROM_CENTER_2D ) );
+					fDist = WWMath::SqrtOrigin( ThePartitionManager->getDistanceSquared( me, other, FROM_CENTER_2D ) );
 				}
 			}
 

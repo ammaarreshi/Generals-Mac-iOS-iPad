@@ -121,6 +121,8 @@ public:
 	virtual UnsignedInt getNum2DSamples(void) const;
 	virtual UnsignedInt getNum3DSamples(void) const;
 	virtual UnsignedInt getNumStreams(void) const;
+	virtual UnsignedInt getNumAvailable2DSamples() const;
+	virtual UnsignedInt getNumAvailable3DSamples() const;
 
 	virtual Bool doesViolateLimit(AudioEventRTS *event) const;
 	virtual Bool isPlayingLowerPriority(AudioEventRTS *event) const;
