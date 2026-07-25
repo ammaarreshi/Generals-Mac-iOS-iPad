@@ -276,6 +276,13 @@ void SDL3GameEngine::pollSDL3Events(void)
 
 			case SDL_EVENT_WINDOW_FOCUS_GAINED:
 				m_IsActive = true;
+				// GeneralsX @bugfix 10/07/2026 SDL3 has no DirectInput-style KEY_LOST, so modifier
+				// key-up events swallowed while unfocused (Cmd-Tab, Mission Control) leave Alt/Ctrl
+				// stuck down and silently break modifier hotkeys like Ctrl+number. Mirror the Win32
+				// device-loss path by resetting keyboard state when focus returns.
+				if (TheKeyboard) {
+					TheKeyboard->resetKeys();
+				}
 				break;
 
 			case SDL_EVENT_WINDOW_FOCUS_LOST:
