@@ -769,6 +769,10 @@ void Keyboard::resetKeys()
 //-------------------------------------------------------------------------------------------------
 void Keyboard::refreshAltKeys() const
 {
+	// GeneralsX @bugfix 10/07/2026 Guard against focus events arriving before the message stream exists.
+	if (TheMessageStream == nullptr)
+		return;
+
 	if (BitIsSet(m_keyStatus[KEY_LALT].state, KEY_STATE_DOWN))
 	{
 		GameMessage* msg = TheMessageStream->appendMessage(GameMessage::MSG_RAW_KEY_UP);

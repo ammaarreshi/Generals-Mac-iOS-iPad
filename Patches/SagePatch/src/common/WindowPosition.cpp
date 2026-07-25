@@ -1,4 +1,4 @@
-// Window position presets — Ctrl+1..5 to snap the window to common positions
+// Window position presets — Cmd+Option+1..5 to snap the window to common positions
 // on the active display. SDL3 does the work; works on every platform.
 
 #include "SagePatch/Features.h"

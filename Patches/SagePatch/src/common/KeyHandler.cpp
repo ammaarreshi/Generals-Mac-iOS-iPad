@@ -11,6 +11,12 @@ bool handleKeyDown(const SDL_KeyboardEvent& ev) {
     if (!window) return false;
 
     const bool ctrl = (ev.mod & SDL_KMOD_CTRL) != 0;
+    // Window snap uses Cmd+Option: the game binds Ctrl+1..0 to control groups,
+    // and on macOS Cmd also acts as Ctrl in-game, so any bare-modifier+number
+    // combo would shadow them. Cmd+Option+number is unbound in the game.
+    const bool gui = (ev.mod & SDL_KMOD_GUI) != 0;
+    const bool alt = (ev.mod & SDL_KMOD_ALT) != 0;
+    const bool snapMod = gui && alt;
 
     switch (ev.key) {
         case SDLK_F11:
@@ -29,19 +35,19 @@ bool handleKeyDown(const SDL_KeyboardEvent& ev) {
             break;
 
         case SDLK_1:
-            if (ctrl) { moveWindow(window, WindowPosition::Center); return true; }
+            if (snapMod) { moveWindow(window, WindowPosition::Center); return true; }
             break;
         case SDLK_2:
-            if (ctrl) { moveWindow(window, WindowPosition::TopLeft); return true; }
+            if (snapMod) { moveWindow(window, WindowPosition::TopLeft); return true; }
             break;
         case SDLK_3:
-            if (ctrl) { moveWindow(window, WindowPosition::TopRight); return true; }
+            if (snapMod) { moveWindow(window, WindowPosition::TopRight); return true; }
             break;
         case SDLK_4:
-            if (ctrl) { moveWindow(window, WindowPosition::BottomLeft); return true; }
+            if (snapMod) { moveWindow(window, WindowPosition::BottomLeft); return true; }
             break;
         case SDLK_5:
-            if (ctrl) { moveWindow(window, WindowPosition::BottomRight); return true; }
+            if (snapMod) { moveWindow(window, WindowPosition::BottomRight); return true; }
             break;
 
         default:

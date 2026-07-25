@@ -104,6 +104,9 @@ struct MouseIO
 
 	Int wheelPos;  /**< mouse wheel position, 0 is no event, + is up/away from
 								 user while - is down/toward user */
+	Real wheelPanX;  /**< precise trackpad scroll delta X; 0 for real wheel events.
+										Devices without trackpad support leave these at 0. */
+	Real wheelPanY;  ///< precise trackpad scroll delta Y; 0 for real wheel events
 	ICoord2D deltaPos;  ///< overall change in mouse pointer this frame
 
 	MouseButtonState leftState;					// button state: None (no event), Up, Down, DoubleClick

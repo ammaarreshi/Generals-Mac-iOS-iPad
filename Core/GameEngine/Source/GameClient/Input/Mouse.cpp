@@ -198,6 +198,8 @@ void Mouse::processMouseEvent( Int index )
 	m_currMouse.rightEvent = MOUSE_EVENT_NONE;
 	m_currMouse.middleEvent = MOUSE_EVENT_NONE;
 	m_currMouse.wheelPos = 0;
+	m_currMouse.wheelPanX = 0.0f;
+	m_currMouse.wheelPanY = 0.0f;
 
 	// what type of movement commands are we setup for
 	if( m_inputMovesAbsolute == TRUE )
@@ -218,6 +220,8 @@ void Mouse::processMouseEvent( Int index )
 
 	// Cumulate Wheel Adjustments
 	m_currMouse.wheelPos += m_mouseEvents[ index ].wheelPos;
+	m_currMouse.wheelPanX += m_mouseEvents[ index ].wheelPanX;
+	m_currMouse.wheelPanY += m_mouseEvents[ index ].wheelPanY;
 
 	// Check Left Mouse State
 	if( m_mouseEvents[ index ].leftState != MBS_None )
@@ -822,13 +826,17 @@ void Mouse::createStreamMessages()
 
 		// wheel pos
 		msg = nullptr;
-		if( m_currMouse.wheelPos != 0 )
+		if( m_currMouse.wheelPos != 0 || m_currMouse.wheelPanX != 0.0f || m_currMouse.wheelPanY != 0.0f )
 		{
 			msg = TheMessageStream->appendMessage( GameMessage::MSG_RAW_MOUSE_WHEEL );
 			msg->appendPixelArgument( m_currMouse.pos );
 			// TheSuperHackers @bugfix Use float wheel delta to preserve fractional values from touchpad input
 			msg->appendRealArgument( m_currMouse.wheelPos / (Real)MOUSE_WHEEL_DELTA );
 			msg->appendIntegerArgument( TheKeyboard->getModifierFlags() );
+			// GeneralsX @feature 21/07/2026 Precise trackpad pan deltas (both zero for real wheels);
+			// consumers that only read the first three arguments are unaffected.
+			msg->appendRealArgument( m_currMouse.wheelPanX );
+			msg->appendRealArgument( m_currMouse.wheelPanY );
 		}
 
 	}

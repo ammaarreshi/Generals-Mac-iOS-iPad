@@ -261,6 +261,13 @@ KeyVal SDL3Keyboard::translateScanCodeToKeyVal(unsigned char scan)
 		case SDL_SCANCODE_RSHIFT: return KEY_RSHIFT;
 		case SDL_SCANCODE_LCTRL: return KEY_LCTRL;     // GeneralsX @bugfix BenderAI 13/02/2026 Fix key constant name
 		case SDL_SCANCODE_RCTRL: return KEY_RCTRL;     // GeneralsX @bugfix BenderAI 13/02/2026 Fix key constant name
+#ifdef __APPLE__
+		// GeneralsX @feature 22/07/2026 Cmd acts as Ctrl so Mac-idiomatic combos like
+		// Cmd+1 work for control groups. Physical Ctrl still works too. macOS only:
+		// on Linux the GUI key is the desktop's Super key and must stay unmapped.
+		case SDL_SCANCODE_LGUI: return KEY_LCTRL;
+		case SDL_SCANCODE_RGUI: return KEY_RCTRL;
+#endif
 		case SDL_SCANCODE_LALT: return KEY_LALT;       // GeneralsX @bugfix BenderAI 13/02/2026 Fix key constant name
 		case SDL_SCANCODE_RALT: return KEY_RALT;       // GeneralsX @bugfix BenderAI 13/02/2026 Fix key constant name
 		

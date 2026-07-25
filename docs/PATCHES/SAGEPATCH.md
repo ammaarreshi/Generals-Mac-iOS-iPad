@@ -98,7 +98,7 @@ Game process (GeneralsXZH)
     │       └── SDL_PollEvent gets replaced (interpose table on macOS,
     │           symbol override + dlsym RTLD_NEXT on Linux)
     │              │
-    │              └── F11, Scroll Lock, Ctrl+PgUp/Dn, Ctrl+1..5 → SagePatch handlers
+    │              └── F11, Scroll Lock, Ctrl+PgUp/Dn, Cmd+Option+1..5 → SagePatch handlers
     │                      │
     │                      └── Per-platform: screencapture / ImageMagick,
     │                          CoreGraphics gamma / XF86VidMode, SDL_SetWindowPosition
