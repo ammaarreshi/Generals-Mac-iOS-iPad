@@ -192,7 +192,7 @@ export DYLD_LIBRARY_PATH="\${SCRIPT_DIR}:\${DYLD_LIBRARY_PATH:-}"
 
 # SagePatch (optional QoL features). Loaded via DYLD_INSERT_LIBRARIES so it
 # can interpose SDL3 functions for hot-keys (F11 screenshot, Scroll Lock cursor
-# lock, Ctrl+PageUp/PageDown brightness, Ctrl+1..5 window snap).
+# lock, Ctrl+PageUp/PageDown brightness, Cmd+Option+1..5 window snap).
 if [[ -f "\${SCRIPT_DIR}/libsage_patch.dylib" && "\${SAGE_PATCH_DISABLED:-0}" != "1" ]]; then
     if [[ -n "\${DYLD_INSERT_LIBRARIES:-}" ]]; then
         export DYLD_INSERT_LIBRARIES="\${SCRIPT_DIR}/libsage_patch.dylib:\${DYLD_INSERT_LIBRARIES}"

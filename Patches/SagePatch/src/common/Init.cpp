@@ -28,7 +28,7 @@ void init() {
     SAGEPATCH_LOG("  F11             screenshot (PNG to ~/Pictures/GeneralsX)");
     SAGEPATCH_LOG("  Scroll Lock     toggle cursor lock");
     SAGEPATCH_LOG("  Ctrl+PageUp/Dn  brightness +/-");
-    SAGEPATCH_LOG("  Ctrl+1..5       window position (center / TL / TR / BL / BR)");
+    SAGEPATCH_LOG("  Cmd+Option+1..5 window position (center / TL / TR / BL / BR)");
 }
 
 void shutdown() {}
