@@ -268,6 +268,12 @@ GameMessageDisposition WindowTranslator::translateGameMessage(const GameMessage 
 			// get wheel position
 			Real wheelPos = msg->getArgument( 1 )->real;
 
+			// GeneralsX @feature 21/07/2026 Horizontal-only trackpad pan carries no
+			// vertical spin; UI windows have nothing to do with it, so let it pass
+			// through to the camera translator instead of faking a wheel direction.
+			if( wheelPos == 0.0f )
+				break;
+
 			// process wheel event
 			GameWindowMessage gwm = rawMouseToWindowMessage( msg );
 			if( TheWindowManager )

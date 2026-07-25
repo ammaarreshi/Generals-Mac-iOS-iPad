@@ -31,6 +31,7 @@
 #include "SDL3Device/GameClient/SDL3Mouse.h"
 #include <cstdio>
 #include <cstring>
+#include <cmath>
 
 // GeneralsX @bugfix felipebraz 18/02/2026 Include GameLogic for frame tracking
 #include "GameLogic/GameLogic.h"
@@ -755,9 +756,43 @@ void SDL3Mouse::translateWheelEvent(const SDL_MouseWheelEvent& event, MouseIO *r
 	// GeneralsX @bugfix felipebraz 18/02/2026 Normalize timestamp to milliseconds (SDL3 uses nanoseconds)
 	result->time = (Uint32)(event.timestamp / 1000000);
 
+	// GeneralsX @feature 21/07/2026 Trackpad two-finger pan support.
+	// Honor macOS "natural scrolling": SDL flags flipped values with
+	// direction == SDL_MOUSEWHEEL_FLIPPED; un-flip so downstream sign
+	// conventions are stable regardless of the user's system setting.
+	float wheelX = event.x;
+	float wheelY = event.y;
+	if (event.direction == SDL_MOUSEWHEEL_FLIPPED) {
+		wheelX = -wheelX;
+		wheelY = -wheelY;
+	}
+
+	// Distinguish trackpad scrolls from wheel notches: trackpads produce
+	// precise fractional deltas and/or a horizontal axis, while wheels tick
+	// in whole notches on Y only. The latch keeps mid-gesture events that
+	// happen to land on whole numbers classified as trackpad.
+	const bool preciseNow = (wheelX != 0.0f) ||
+	                        (wheelY != truncf(wheelY)) ||
+	                        (wheelY != 0.0f && fabsf(wheelY) < 1.0f);
+	static Uint64 s_lastPreciseTimestampNs = 0;
+	bool isTrackpad = preciseNow;
+	if (preciseNow) {
+		s_lastPreciseTimestampNs = event.timestamp;
+	} else if (event.timestamp - s_lastPreciseTimestampNs < 300000000ULL) { // 300 ms
+		isTrackpad = true;
+	}
+
+	if (isTrackpad) {
+		result->wheelPanX = wheelX;
+		result->wheelPanY = wheelY;
+	} else {
+		result->wheelPanX = 0.0f;
+		result->wheelPanY = 0.0f;
+	}
+
 	// SDL3 wheel: positive = up/away, negative = down/toward user
 	// Multiply by MOUSE_WHEEL_DELTA (120) to match Windows behavior
-	result->wheelPos = (Int)(event.y * MOUSE_WHEEL_DELTA);
+	result->wheelPos = (Int)(wheelY * MOUSE_WHEEL_DELTA);
 
 	result->leftState = MBS_None;
 	result->rightState = MBS_None;
@@ -877,6 +912,11 @@ void SDL3Mouse::translateEvent(UnsignedInt eventIndex, MouseIO *result)
 	// Raw window-pixel coordinates and window ID, extracted per event type
 	int rawX = 0, rawY = 0;
 	Uint32 windowID = 0;
+
+	// Pan deltas only exist on wheel events; clear them up front so motion and
+	// button translations never carry a stale pan from a previous buffer slot.
+	result->wheelPanX = 0.0f;
+	result->wheelPanY = 0.0f;
 
 	// Switch on event type and delegate to appropriate translation method
 	switch (event.type) {

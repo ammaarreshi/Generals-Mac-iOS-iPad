@@ -416,6 +416,40 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage 
 		{
 			m_lastMouseMoveTimeMsec = timeGetTime();
 
+			// GeneralsX @feature 21/07/2026 Trackpad two-finger scroll pans the camera
+			// (map follows the fingers); Alt/Option + scroll zooms instead, since a
+			// trackpad has no discrete wheel. Real mouse wheels keep the classic zoom.
+			Real panX = 0.0f;
+			Real panY = 0.0f;
+			if (msg->getArgumentCount() >= 5)
+			{
+				panX = msg->getArgument( 3 )->real;
+				panY = msg->getArgument( 4 )->real;
+			}
+			if (panX != 0.0f || panY != 0.0f)
+			{
+				const Int modifiers = msg->getArgument( 2 )->integer;
+				if (modifiers & KEY_STATE_ALT)
+				{
+					TheTacticalView->userZoom( -panY * View::ZoomHeightPerSecond );
+				}
+				else if (TheGameLogic->isInGame())
+				{
+					// Match the magnitude convention of the other scroll modes: keyboard
+					// scroll feeds scrollBy ~SCROLL_AMT * keyboardScrollFactor (~100) per
+					// frame, so one full-strength trackpad tick (~1.0) maps to that order.
+					// The user's scroll-speed option scales it like the other modes.
+					// Signs: SDL wheel Y is positive away from the user; the chosen
+					// orientation moves the camera with the swipe direction.
+					const Real trackpadPanFactor = 120.0f * TheGlobalData->m_keyboardScrollFactor;
+					Coord2D delta;
+					delta.x = -panX * TheGlobalData->m_horizontalScrollSpeedFactor * trackpadPanFactor;
+					delta.y = panY * TheGlobalData->m_verticalScrollSpeedFactor * trackpadPanFactor;
+					TheTacticalView->userScrollBy( &delta );
+				}
+				break;
+			}
+
 			const Real spin = msg->getArgument( 1 )->real;
 			const Real zoom = -spin * View::ZoomHeightPerSecond;
 			TheTacticalView->userZoom(zoom);
