@@ -118,6 +118,17 @@ ALuint OpenALAudioFileCache::getBufferForFile(const OpenFileInfo &fileInfo)
 		}
 	}
 
+	// GeneralsX @bugfix Marco 24/08/2026 Bail out early when there is no filename
+	// to load. Some stock audio events ship with an empty "Sounds =" list -
+	// TurretMoveLoop and RadarEvent among them. TurretMoveLoop is declared
+	// "loop all random", so startNextLoop() regenerates the (empty) filename and
+	// lands here again every frame, each time walking all the way down to
+	// TheFileSystem->openFile("") before failing. Nothing was leaked, but the
+	// lookup and the BIG-archive access were pure waste, several times a second.
+	if (strToFind.isEmpty()) {
+		return 0;
+	}
+
 	auto it = m_openFiles.find(strToFind);
 
 	if (it != m_openFiles.end()) {
@@ -131,8 +142,6 @@ ALuint OpenALAudioFileCache::getBufferForFile(const OpenFileInfo &fileInfo)
 		DEBUG_ASSERTLOG(strToFind.isEmpty(), ("Missing Audio File: '%s'\n", strToFind.str()));
 		return 0;
 	}
-
-	UnsignedInt fileSize = file->size();
 
 	OpenAudioFile openedAudioFile;
 	alGenBuffers(1, &openedAudioFile.m_buffer);
@@ -160,7 +169,12 @@ ALuint OpenALAudioFileCache::getBufferForFile(const OpenFileInfo &fileInfo)
 
 	openedAudioFile.m_ffmpegFile->close();
 
-	openedAudioFile.m_fileSize = fileSize;
+	// GeneralsX @bugfix Marco 24/08/2026 Account for the DECODED PCM size, not the
+	// compressed file size. decodeFFmpeg() accumulates m_fileSize per frame; assigning
+	// file->size() here overwrote it with a far smaller value, so the cache
+	// under-reported its real footprint and evicted much later than intended.
+	// (This is not what caused the buffer leak - see releaseOpenAudioFile - but
+	// the accounting was wrong regardless.)
 	m_currentlyUsedSize += openedAudioFile.m_fileSize;
 	if (m_currentlyUsedSize > m_maxSize) {
 		DEBUG_LOG(("Audio Cache is full, trying to free some space\n"));
@@ -221,7 +235,13 @@ void OpenALAudioFileCache::setMaxSize(UnsignedInt size)
 //-------------------------------------------------------------------------------------------------
 void OpenALAudioFileCache::releaseOpenAudioFile(OpenAudioFile* fileToRelease)
 {
-	if (fileToRelease->m_openCount > 0) {
+	// GeneralsX @bugfix Marco 24/08/2026 Always detach the buffer from any source
+	// still referencing it - not just when m_openCount > 0. The cache reference is
+	// dropped (closeBuffer) before the source gets a new buffer assigned, so a
+	// buffer with m_openCount == 0 can still be bound to a live OpenAL source.
+	// alDeleteBuffers then fails with AL_INVALID_OPERATION and the buffer leaks;
+	// measured: 1158 of 1158 deletions failed, ~26 MB/min lost.
+	if (fileToRelease->m_buffer) {
 		// This thing needs to be terminated IMMEDIATELY.
 		TheAudio->closeAnySamplesUsingFile((const void*)(uintptr_t)fileToRelease->m_buffer);
 	}
