@@ -9,6 +9,7 @@ BASE_HEIGHT_MAP_HEADER = ROOT / "Core/GameEngineDevice/Include/W3DDevice/GameCli
 W3D_TERRAIN_VISUAL_CPP = (
     ROOT / "Core/GameEngineDevice/Source/W3DDevice/GameClient/W3DTerrainVisual.cpp"
 )
+W3D_VIEW_CPP = ROOT / "Core/GameEngineDevice/Source/W3DDevice/GameClient/W3DView.cpp"
 
 
 def function_body(source: str, signature: str) -> str:
@@ -173,6 +174,20 @@ class TerrainPerformanceContractsTest(unittest.TestCase):
 
         self.assertIn("terrainHeightChanged(x, y);", body)
         self.assertNotIn("staticLightingChanged()", body)
+
+    def test_view_prefers_full_update_then_flushes_one_dirty_region(self) -> None:
+        source = W3D_VIEW_CPP.read_text(encoding="utf-8")
+        body = function_body(source, "void W3DView::update()")
+
+        full = body.index("doesNeedFullUpdate()")
+        partial = body.index("takeDirtyRegion(dirtyTerrain)")
+        self.assertLess(full, partial)
+        self.assertIn("else if", body[full:partial])
+        self.assertIn("createLightsIterator()", body[partial:])
+        self.assertIn("doPartialUpdate(", body[partial:])
+        self.assertIn("dirtyTerrain", body[partial:])
+        self.assertIn("TheTerrainRenderObject->getMap()", body[partial:])
+        self.assertIn("destroyLightsIterator(it)", body[partial:])
 
 
 if __name__ == "__main__":
