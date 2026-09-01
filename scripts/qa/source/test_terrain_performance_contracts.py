@@ -6,6 +6,9 @@ ROOT = Path(__file__).resolve().parents[3]
 HEIGHT_MAP_CPP = ROOT / "Core/GameEngineDevice/Source/W3DDevice/GameClient/HeightMap.cpp"
 BASE_HEIGHT_MAP_CPP = ROOT / "Core/GameEngineDevice/Source/W3DDevice/GameClient/BaseHeightMap.cpp"
 BASE_HEIGHT_MAP_HEADER = ROOT / "Core/GameEngineDevice/Include/W3DDevice/GameClient/BaseHeightMap.h"
+W3D_TERRAIN_VISUAL_CPP = (
+    ROOT / "Core/GameEngineDevice/Source/W3DDevice/GameClient/W3DTerrainVisual.cpp"
+)
 
 
 def function_body(source: str, signature: str) -> str:
@@ -163,6 +166,13 @@ class TerrainPerformanceContractsTest(unittest.TestCase):
         self.assertIn("m_scorchesInBuffer = 0;", static_lighting_body)
         self.assertIn("if (m_roadBuffer)", static_lighting_body)
         self.assertIn("m_roadBuffer->updateLighting();", static_lighting_body)
+
+    def test_foundation_lowering_records_a_partial_terrain_update(self) -> None:
+        source = W3D_TERRAIN_VISUAL_CPP.read_text(encoding="utf-8")
+        body = function_body(source, "void W3DTerrainVisual::setRawMapHeight(")
+
+        self.assertIn("terrainHeightChanged(x, y);", body)
+        self.assertNotIn("staticLightingChanged()", body)
 
 
 if __name__ == "__main__":
