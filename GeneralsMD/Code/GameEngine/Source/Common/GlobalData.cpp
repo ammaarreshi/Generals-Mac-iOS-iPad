@@ -1219,6 +1219,11 @@ void GlobalData::parseGameDataDefinition( INI* ini )
 	TheWritableGlobalData->m_keyboardScrollFactor = optionPref.getScrollFactor();
 	TheWritableGlobalData->m_drawScrollAnchor = optionPref.getDrawScrollAnchor();
 	TheWritableGlobalData->m_moveScrollAnchor = optionPref.getMoveScrollAnchor();
+	// GeneralsX @feature Codex 01/09/2026 Apply user-adjustable camera preferences.
+	TheWritableGlobalData->m_maxCameraHeight = optionPref.getMaxCameraHeight();
+	TheWritableGlobalData->m_minCameraHeight = optionPref.getMinCameraHeight();
+	TheWritableGlobalData->m_cameraPitch = optionPref.getCameraPitch();
+	TheWritableGlobalData->m_terrainDrawDistanceScale = optionPref.getTerrainDrawDistanceScale();
 	TheWritableGlobalData->m_defaultIP = optionPref.getLANIPAddress();
 	TheWritableGlobalData->m_firewallSendDelay = optionPref.getSendDelay();
 	TheWritableGlobalData->m_firewallBehavior = optionPref.getFirewallBehavior();

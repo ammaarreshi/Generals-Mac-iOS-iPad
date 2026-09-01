@@ -219,6 +219,68 @@ D3DXLoadSurfaceFromSurface(
 				}
 			}
 		}
+		else if (descSrc.Format == D3DFMT_A4R4G4B4)
+		{
+			// Box filter for A4R4G4B4 team-colour texture mipmaps.
+			const uint16_t *src = (const uint16_t *)srcRect.pBits;
+			uint16_t *dst = (uint16_t *)destRect.pBits;
+			uint32_t srcPitch16 = srcRect.Pitch / 2;
+			uint32_t dstPitch16 = destRect.Pitch / 2;
+
+			for (uint32_t y = 0; y < descDest.Height; y++)
+			{
+				for (uint32_t x = 0; x < descDest.Width; x++)
+				{
+					uint32_t sx = x * 2;
+					uint32_t sy = y * 2;
+					uint16_t p00 = src[sy * srcPitch16 + sx];
+					uint16_t p10 = src[sy * srcPitch16 + sx + 1];
+					uint16_t p01 = src[(sy + 1) * srcPitch16 + sx];
+					uint16_t p11 = src[(sy + 1) * srcPitch16 + sx + 1];
+
+					uint32_t a = (((p00 >> 12) & 0x0F) + ((p10 >> 12) & 0x0F) +
+					              ((p01 >> 12) & 0x0F) + ((p11 >> 12) & 0x0F) + 2) >> 2;
+					uint32_t r = (((p00 >> 8) & 0x0F) + ((p10 >> 8) & 0x0F) +
+					              ((p01 >> 8) & 0x0F) + ((p11 >> 8) & 0x0F) + 2) >> 2;
+					uint32_t g = (((p00 >> 4) & 0x0F) + ((p10 >> 4) & 0x0F) +
+					              ((p01 >> 4) & 0x0F) + ((p11 >> 4) & 0x0F) + 2) >> 2;
+					uint32_t b = ((p00 & 0x0F) + (p10 & 0x0F) +
+					              (p01 & 0x0F) + (p11 & 0x0F) + 2) >> 2;
+
+					dst[y * dstPitch16 + x] = (uint16_t)((a << 12) | (r << 8) | (g << 4) | b);
+				}
+			}
+		}
+		else if (descSrc.Format == D3DFMT_R5G6B5)
+		{
+			// Box filter for R5G6B5 texture mipmaps.
+			const uint16_t *src = (const uint16_t *)srcRect.pBits;
+			uint16_t *dst = (uint16_t *)destRect.pBits;
+			uint32_t srcPitch16 = srcRect.Pitch / 2;
+			uint32_t dstPitch16 = destRect.Pitch / 2;
+
+			for (uint32_t y = 0; y < descDest.Height; y++)
+			{
+				for (uint32_t x = 0; x < descDest.Width; x++)
+				{
+					uint32_t sx = x * 2;
+					uint32_t sy = y * 2;
+					uint16_t p00 = src[sy * srcPitch16 + sx];
+					uint16_t p10 = src[sy * srcPitch16 + sx + 1];
+					uint16_t p01 = src[(sy + 1) * srcPitch16 + sx];
+					uint16_t p11 = src[(sy + 1) * srcPitch16 + sx + 1];
+
+					uint32_t r = (((p00 >> 11) & 0x1F) + ((p10 >> 11) & 0x1F) +
+					              ((p01 >> 11) & 0x1F) + ((p11 >> 11) & 0x1F) + 2) >> 2;
+					uint32_t g = (((p00 >> 5) & 0x3F) + ((p10 >> 5) & 0x3F) +
+					              ((p01 >> 5) & 0x3F) + ((p11 >> 5) & 0x3F) + 2) >> 2;
+					uint32_t b = ((p00 & 0x1F) + (p10 & 0x1F) +
+					              (p01 & 0x1F) + (p11 & 0x1F) + 2) >> 2;
+
+					dst[y * dstPitch16 + x] = (uint16_t)((r << 11) | (g << 5) | b);
+				}
+			}
+		}
 		else
 		{
 			pDestSurface->UnlockRect();
