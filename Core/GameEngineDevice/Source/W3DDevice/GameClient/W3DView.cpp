@@ -1394,9 +1394,22 @@ void W3DView::update()
 
 //	Int elapsedTimeMs = TheW3DFrameLengthInMsec; // Assume a constant time flow.  It just works out better.  jba.
 
+	IRegion2D dirtyTerrain;
 	if (TheTerrainRenderObject && TheTerrainRenderObject->doesNeedFullUpdate())
 	{
 		updateTerrain();
+	}
+	// GeneralsX @performance Mehmet Bat 01/09/2026 Flush accumulated terrain edits once per render update.
+	else if (TheTerrainRenderObject && TheTerrainRenderObject->takeDirtyRegion(dirtyTerrain))
+	{
+		RefRenderObjListIterator *it =
+			W3DDisplay::m_3DScene ? W3DDisplay::m_3DScene->createLightsIterator() : nullptr;
+		TheTerrainRenderObject->doPartialUpdate(dirtyTerrain, TheTerrainRenderObject->getMap(), it);
+		if (it)
+		{
+			W3DDisplay::m_3DScene->destroyLightsIterator(it);
+			it = nullptr;
+		}
 	}
 
 	static Real followFactor = -1;

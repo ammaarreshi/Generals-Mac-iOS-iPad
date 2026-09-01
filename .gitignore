@@ -96,3 +96,6 @@ logs_*.zip
 # iOS shell-app build products (XcodeGen regenerates the project from ios/project.yml)
 ios/build/
 ios/GeneralsXZH.xcodeproj/
+
+# Local isolated feature worktrees
+.worktrees/

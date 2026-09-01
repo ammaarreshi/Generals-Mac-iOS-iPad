@@ -128,6 +128,9 @@ void ExtrasMenuShutdown(WindowLayout *layout, void *userData)
 		delete pref;
 		pref = nullptr;
 	}
+
+	layout->hide(TRUE);
+	TheShell->shutdownComplete(layout);
 }
 
 //-------------------------------------------------------------------------------------------------

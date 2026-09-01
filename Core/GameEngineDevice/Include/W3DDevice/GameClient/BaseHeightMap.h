@@ -123,6 +123,9 @@ public:
  	virtual void adjustTerrainLOD(Int adj);
 	virtual void doPartialUpdate(const IRegion2D &partialRange, WorldHeightMap *htMap, RefRenderObjListIterator *pLightsIterator) = 0;
 	virtual void staticLightingChanged();
+	// GeneralsX @performance Mehmet Bat 01/09/2026 Expose deferred terrain dirty-region accumulation and consumption.
+	void terrainHeightChanged(Int x, Int y);
+	Bool takeDirtyRegion(IRegion2D &region);
 	virtual void oversizeTerrain(Int tilesToOversize) = 0; ///< Oversize the visible terrain area.
 	virtual void setTerrainDrawSize(Int width, Int height) = 0; ///< Resize the visible terrain area. Always defaults to oversize dimensions when oversize is set.
 	virtual void reset();
@@ -130,6 +133,7 @@ public:
   void redirectToHeightmap( WorldHeightMap *pMap )
   {
     REF_PTR_RELEASE( m_map );
+	  m_hasDirtyRegion = false;
 	  REF_PTR_SET(m_map, pMap);	//update our heightmap pointer in case it changed since last call.
   }
 
@@ -268,6 +272,9 @@ protected:
 	Vector3 m_depthFade;	///<depth based fall off values for r,g,b
 	Bool m_disableTextures;
 	Bool m_needFullUpdate; ///< True if lighting changed, and we need to update all instead of what moved.
+	// GeneralsX @performance Mehmet Bat 01/09/2026 Track a bounded terrain region until its consumer updates it.
+	IRegion2D m_dirtyRegion;
+	Bool m_hasDirtyRegion;
 	Bool m_doXNextTime; ///< True if we updated y scroll, and need to do x scroll next frame.
 	Real	m_minHeight;	///<minimum value of height samples in heightmap
 	Real	m_maxHeight;	///<maximum value of height samples in heightmap

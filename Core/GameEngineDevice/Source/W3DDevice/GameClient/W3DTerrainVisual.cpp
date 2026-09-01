@@ -898,7 +898,8 @@ void W3DTerrainVisual::setRawMapHeight(const ICoord2D *gridPos, Int height)
  		if (m_logicHeightMap->getHeight(x,y) > height)
 		{
 			m_logicHeightMap->setRawHeight(x, y, height);
-			m_terrainRenderObject->staticLightingChanged(); // OOH! this could benefit from the new Seismic update code
+			// GeneralsX @performance Mehmet Bat 01/09/2026 Accumulate lowered foundation cells for one bounded terrain update.
+			m_terrainRenderObject->terrainHeightChanged(x, y);
 
 
 #ifdef DO_SEISMIC_SIMULATIONS

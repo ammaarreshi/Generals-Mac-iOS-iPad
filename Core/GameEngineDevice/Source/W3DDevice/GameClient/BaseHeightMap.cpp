@@ -241,6 +241,9 @@ BaseHeightMapRenderObjClass::BaseHeightMapRenderObjClass()
 	m_x=0;
 	m_y=0;
 	m_needFullUpdate = false;
+	m_hasDirtyRegion = false;
+	m_dirtyRegion.lo.x = m_dirtyRegion.lo.y = 0;
+	m_dirtyRegion.hi.x = m_dirtyRegion.hi.y = 0;
 	m_showImpassableAreas = false;
 	m_updating = false;
 	//Set height to the maximum value that can be stored.
@@ -625,6 +628,8 @@ void BaseHeightMapRenderObjClass::updateMacroTexture(AsciiString textureName)
 //=============================================================================
 void BaseHeightMapRenderObjClass::reset()
 {
+	// GeneralsX @performance Mehmet Bat 01/09/2026 Discard deferred terrain work when resetting map resources.
+	m_hasDirtyRegion = false;
 	if (m_treeBuffer) {
 		m_treeBuffer->clearAllTrees();
 	}
@@ -1759,6 +1764,11 @@ shaders, and materials.*/
 Int BaseHeightMapRenderObjClass::initHeightData(Int x, Int y, WorldHeightMap *pMap, RefRenderObjListIterator *pLightsIteratork, Bool updateExtraPassTiles)
 {
 
+	// GeneralsX @performance Mehmet Bat 01/09/2026 Preserve dirty bounds when reinitializing the current heightmap.
+	if (m_map != pMap)
+	{
+		m_hasDirtyRegion = false;
+	}
 	REF_PTR_SET(m_map, pMap);	//update our heightmap pointer in case it changed since last call.
 
 	if (m_shroud)
@@ -2351,6 +2361,68 @@ void BaseHeightMapRenderObjClass::staticLightingChanged()
 	if (m_roadBuffer)
 		m_roadBuffer->updateLighting();
 
+}
+
+// GeneralsX @performance Mehmet Bat 01/09/2026 Aggregate padded terrain changes for bounded partial updates.
+void BaseHeightMapRenderObjClass::terrainHeightChanged(Int x, Int y)
+{
+	const Int PAD = 2;
+	const Int loX = x - PAD;
+	const Int loY = y - PAD;
+	const Int hiX = x + PAD;
+	const Int hiY = y + PAD;
+	if (!m_hasDirtyRegion)
+	{
+		m_dirtyRegion.lo.x = loX;
+		m_dirtyRegion.lo.y = loY;
+		m_dirtyRegion.hi.x = hiX;
+		m_dirtyRegion.hi.y = hiY;
+		m_hasDirtyRegion = true;
+	}
+	else
+	{
+		if (loX < m_dirtyRegion.lo.x)
+			m_dirtyRegion.lo.x = loX;
+		if (loY < m_dirtyRegion.lo.y)
+			m_dirtyRegion.lo.y = loY;
+		if (hiX > m_dirtyRegion.hi.x)
+			m_dirtyRegion.hi.x = hiX;
+		if (hiY > m_dirtyRegion.hi.y)
+			m_dirtyRegion.hi.y = hiY;
+	}
+
+	if (m_map)
+	{
+		const Int maxX = m_map->getXExtent() - 1;
+		const Int maxY = m_map->getYExtent() - 1;
+		if (m_dirtyRegion.lo.x < 0)
+			m_dirtyRegion.lo.x = 0;
+		if (m_dirtyRegion.lo.y < 0)
+			m_dirtyRegion.lo.y = 0;
+		if (m_dirtyRegion.hi.x > maxX)
+			m_dirtyRegion.hi.x = maxX;
+		if (m_dirtyRegion.hi.y > maxY)
+			m_dirtyRegion.hi.y = maxY;
+		if (m_dirtyRegion.hi.x < m_dirtyRegion.lo.x || m_dirtyRegion.hi.y < m_dirtyRegion.lo.y)
+			m_hasDirtyRegion = false;
+	}
+
+	m_scorchesInBuffer = 0;
+	m_curNumScorchVertices = 0;
+	m_curNumScorchIndices = 0;
+}
+
+// GeneralsX @performance Mehmet Bat 01/09/2026 Consume each terrain dirty region at most once.
+Bool BaseHeightMapRenderObjClass::takeDirtyRegion(IRegion2D &region)
+{
+	if (!m_hasDirtyRegion)
+		return false;
+
+	region = m_dirtyRegion;
+	m_hasDirtyRegion = false;
+	if (m_roadBuffer)
+		m_roadBuffer->updateLighting();
+	return true;
 }
 
 //=============================================================================
