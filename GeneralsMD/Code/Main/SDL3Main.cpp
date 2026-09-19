@@ -471,6 +471,12 @@ int main(int argc, char* argv[])
 		// SDL3GameEngine.cpp; SDL's automatic touch->mouse synthesis would
 		// double-deliver finger 1 and fight the two-finger pan logic.
 		SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+		// Defer the system edge gestures like other fullscreen games: the first
+		// swipe from the bottom only reveals the (dimmed) home indicator, the
+		// second one leaves the app. The window is neither FULLSCREEN nor
+		// BORDERLESS, so SDL does not pick this by default, and dragging a
+		// selection box toward the bottom edge drops the player on the home screen.
+		SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, "2");
 #endif
 		if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
 			fprintf(stderr, "FATAL: Failed to initialize SDL3: %s\n", SDL_GetError());
