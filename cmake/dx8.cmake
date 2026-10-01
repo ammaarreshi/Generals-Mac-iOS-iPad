@@ -208,6 +208,7 @@ Cflags: -I\${includedir}
       GIT_SHALLOW       FALSE
       SOURCE_DIR        ${DXVK_SOURCE_DIR}
       BINARY_DIR        ${DXVK_BUILD_DIR}
+      # Built by Claude Code 09/26/2026, no other changes made by me.
       # Newer libc++ rejects try_emplace(std::piecewise_construct, ...) and an empty key tuple; use emplace with an explicit key.
       PATCH_COMMAND     sed -i.orig -e s/m_shaderLibraries.try_emplace/m_shaderLibraries.emplace/ -e s/std::tuple\(\),/std::tuple\(key\),/ <SOURCE_DIR>/src/dxvk/dxvk_pipemanager.cpp
       CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CC=clang CXX=clang++ "CFLAGS=-arch ${DXVK_HOST_ARCH} -mcpu=apple-m1" "CXXFLAGS=-arch ${DXVK_HOST_ARCH} -mcpu=apple-m1" "LDFLAGS=-arch ${DXVK_HOST_ARCH}" "${DXVK_PKG_CONFIG_ENV}" ${VULKAN_SDK_ENV_VAR} ${MESON_EXECUTABLE} setup ${DXVK_BUILD_DIR} ${DXVK_SOURCE_DIR} ${DXVK_MESON_MACHINE_ARGS} -Ddxvk_native_wsi=sdl3 --buildtype=release --reconfigure
