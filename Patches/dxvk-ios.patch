@@ -3,8 +3,64 @@
 # Local modifications to references/fbraz3-dxvk (at 46a3bc01) used to
 # build the libdxvk_d3d8/d3d9 dylibs that package-ios-zh.sh embeds: dlopen MoltenVK from
 # the app bundle's Frameworks directory, and SDL3 WSI fixes for the iOS drawable.
+# Also: pass the default key explicitly in createNullFsPipelineLibrary(); the Xcode 27
+# (iPhoneOS 27.1 SDK) libc++ hard-errors on emplace(piecewise_construct, tuple<>(), ...).
+# Also: make samplerMirrorClampToEdge optional for D3D9 (MoltenVK lacks it on A13-class
+# GPUs); D3DTADDRESS_MIRRORONCE then falls back to MIRRORED_REPEAT.
 # Apply with: git -C references/fbraz3-dxvk apply ../../Patches/dxvk-ios.patch
 # Then build with: meson setup --cross-file cmake/meson-arm64-ios-cross.ini ...
+diff --git a/src/d3d9/d3d9_device.cpp b/src/d3d9/d3d9_device.cpp
+index 4313f6a4..ee63490a 100644
+--- a/src/d3d9/d3d9_device.cpp
++++ b/src/d3d9/d3d9_device.cpp
+@@ -4524,7 +4524,9 @@ namespace dxvk {
+     enabled.core.features.geometryShader = VK_TRUE;
+     enabled.core.features.robustBufferAccess = VK_TRUE;
+ 
+-    enabled.vk12.samplerMirrorClampToEdge = VK_TRUE;
++    // GeneralsX @bugfix nyanlintun 13/10/2026 Enable mirror-clamp only when supported, because
++    // MoltenVK does not expose it on A13-class GPUs and device creation fails there. (#29)
++    enabled.vk12.samplerMirrorClampToEdge = supported.vk12.samplerMirrorClampToEdge;
+ 
+     enabled.vk13.shaderDemoteToHelperInvocation = VK_TRUE;
+ 
+@@ -7094,10 +7096,20 @@ namespace dxvk {
+ 
+         key.setLegacyCubeFilter(!m_d3d9Options.seamlessCubes);
+       } else {
++        // GeneralsX @bugfix nyanlintun 13/10/2026 Fall back to MIRRORED_REPEAT for
++        // D3DTADDRESS_MIRRORONCE when mirror-clamp is unavailable. (#29)
++        const bool mirrorClamp = m_dxvkDevice->features().vk12.samplerMirrorClampToEdge;
++        auto decode = [mirrorClamp] (D3DTEXTUREADDRESS mode) {
++          VkSamplerAddressMode result = DecodeAddressMode(mode);
++          if (!mirrorClamp && result == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE)
++            result = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
++          return result;
++        };
++
+         key.setAddressModes(
+-          DecodeAddressMode(cState.addressU),
+-          DecodeAddressMode(cState.addressV),
+-          DecodeAddressMode(cState.addressW));
++          decode(cState.addressU),
++          decode(cState.addressV),
++          decode(cState.addressW));
+       }
+ 
+       key.setDepthCompare(cIsDepth, VK_COMPARE_OP_LESS_OR_EQUAL);
+diff --git a/src/dxvk/dxvk_pipemanager.cpp b/src/dxvk/dxvk_pipemanager.cpp
+index 84a07c1f..47df13b2 100644
+--- a/src/dxvk/dxvk_pipemanager.cpp
++++ b/src/dxvk/dxvk_pipemanager.cpp
+@@ -443,7 +443,7 @@ namespace dxvk {
+ 
+     auto iter = m_shaderLibraries.emplace(
+       std::piecewise_construct,
+-      std::tuple(),
++      std::tuple(key),
+       std::tuple(m_device, this, key, layout));
+     return &iter.first->second;
+   }
 diff --git a/src/vulkan/vulkan_loader.cpp b/src/vulkan/vulkan_loader.cpp
 index 518efcb1..a70ea8fb 100644
 --- a/src/vulkan/vulkan_loader.cpp

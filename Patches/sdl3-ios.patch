@@ -1,0 +1,41 @@
+# SDL3 iOS patch
+#
+# Applied to the SDL 3.4.2 FetchContent source on iOS builds (cmake/sdl3.cmake, via
+# cmake/apply_patch_once.cmake). UIKit_ComputeViewFrame() derived the view orientation
+# from the deprecated -[UIApplication statusBarOrientation]; on iPadOS 27 it disagrees
+# with the landscape window scene, so the landscape-only game got a portrait-sized view
+# and Metal drawable (cropped / offset picture). Use the window scene's
+# interfaceOrientation instead, falling back to the active scene during window setup.
+diff --git a/src/video/uikit/SDL_uikitvideo.m b/src/video/uikit/SDL_uikitvideo.m
+index 97aeb94..836ccba 100644
+--- a/src/video/uikit/SDL_uikitvideo.m
++++ b/src/video/uikit/SDL_uikitvideo.m
+@@ -237,7 +237,27 @@ CGRect UIKit_ComputeViewFrame(SDL_Window *window, UIScreen *screen)
+      * https://bugzilla.libsdl.org/show_bug.cgi?id=3505
+      * https://bugzilla.libsdl.org/show_bug.cgi?id=3465
+      * https://forums.developer.apple.com/thread/65337 */
+-    UIInterfaceOrientation orient = [UIApplication sharedApplication].statusBarOrientation;
++    /* GeneralsX @bugfix nyanlintun 13/10/2026 Take the orientation from the window scene.
++     * statusBarOrientation is deprecated and on scene-based iPadOS 27 apps it can
++     * disagree with the actual (landscape) window, which flipped the view frame to
++     * portrait. Fall back to the active scene while the SDL window is still being set
++     * up, and to statusBarOrientation only when no scene is available. (#29) */
++    UIInterfaceOrientation orient = UIInterfaceOrientationUnknown;
++    if (@available(iOS 13.0, *)) {
++        UIWindowScene *scene = nil;
++        if (data != nil && data.uiwindow != nil) {
++            scene = data.uiwindow.windowScene;
++        }
++        if (scene == nil) {
++            scene = UIKit_GetActiveWindowScene();
++        }
++        if (scene != nil) {
++            orient = scene.interfaceOrientation;
++        }
++    }
++    if (orient == UIInterfaceOrientationUnknown) {
++        orient = [UIApplication sharedApplication].statusBarOrientation;
++    }
+     BOOL landscape = UIInterfaceOrientationIsLandscape(orient) ||
+                     !(UIKit_GetSupportedOrientations(window) & (UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown));
+     BOOL fullscreen = CGRectEqualToRect(screen.bounds, frame);
